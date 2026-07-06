@@ -1,50 +1,167 @@
-"""混合检索器 — BM25 + 向量检索，从景小游 RAG 模块复用"""
+"""混合检索器 — BM25 + BGE 向量检索
+
+V2 升级：
+- 集成 BGE embedding 模型进行语义向量搜索
+- 关键词 BM25 匹配 + 向量相似度融合
+- 自动降级：BGE 不可用时退化为纯关键词匹配
+"""
 
 import json
+import math
 import os
-from typing import List, Dict, Optional
+from collections import Counter
+from typing import List, Dict, Optional, Tuple
+
+import numpy as np
+
+from .embeddings import embedding_service, EmbeddingService
+
+
+class BM25Scorer:
+    """BM25 关键词匹配评分器"""
+
+    def __init__(self, k1: float = 1.5, b: float = 0.75):
+        self.k1 = k1
+        self.b = b
+        self._doc_freqs: Dict[str, int] = {}  # 词 → 文档频率
+        self._doc_lengths: List[int] = []       # 每篇文档长度
+        self._avg_dl: float = 0.0               # 平均文档长度
+        self._total_docs: int = 0
+
+    def fit(self, documents: List[str]):
+        """训练 BM25 — 统计词频和文档频率"""
+        self._doc_freqs.clear()
+        self._doc_lengths.clear()
+        self._total_docs = len(documents)
+
+        for doc in documents:
+            tokens = self._tokenize(doc)
+            self._doc_lengths.append(len(tokens))
+            unique_tokens = set(tokens)
+            for token in unique_tokens:
+                self._doc_freqs[token] = self._doc_freqs.get(token, 0) + 1
+
+        self._avg_dl = (
+            sum(self._doc_lengths) / self._total_docs
+            if self._total_docs > 0
+            else 1.0
+        )
+
+    def score(self, query: str, doc_idx: int) -> float:
+        """计算查询对某篇文档的 BM25 分数"""
+        if self._total_docs == 0:
+            return 0.0
+
+        query_tokens = self._tokenize(query)
+        doc_len = self._doc_lengths[doc_idx]
+        score = 0.0
+
+        tf_counter = Counter(query_tokens)
+        for token, qf in tf_counter.items():
+            df = self._doc_freqs.get(token, 0)
+            if df == 0:
+                continue
+            idf = math.log((self._total_docs - df + 0.5) / (df + 0.5) + 1.0)
+            # 简化：假设词在文档中出现 1 次
+            tf = 1.0
+            numerator = tf * (self.k1 + 1)
+            denominator = tf + self.k1 * (1 - self.b + self.b * doc_len / self._avg_dl)
+            score += idf * numerator / denominator * qf
+
+        return score
+
+    @staticmethod
+    def _tokenize(text: str) -> List[str]:
+        """中文分词 — 字符级 uni-gram + bi-gram"""
+        text = text.replace(" ", "").replace("\n", "")
+        tokens = list(text)  # uni-gram
+        for i in range(len(text) - 1):
+            tokens.append(text[i] + text[i + 1])  # bi-gram
+        return tokens
 
 
 class HybridRetriever:
-    """混合检索器：结合 BM25 关键词匹配和向量语义搜索
+    """混合检索器：BM25 关键词 + BGE 向量语义搜索
 
-    这是景小游 RAG 模块的独立副本，作为 TripAgent 的景点搜索后端。
-    V1 版本使用简化的关键词匹配；后续可升级为真正的 BM25 + embedding。
+    V2 升级要点：
+    - BGE embedding 模型提供语义理解能力
+    - BM25 保证精确关键词匹配
+    - 加权融合两种分数
+    - 自动降级：BGE 不可用时退化为纯 BM25
     """
 
     def __init__(
         self,
         bm25_weight: float = 0.3,
         vector_weight: float = 0.7,
-        embedding_model: str = "BAAI/bge-small-zh-v1.5"
+        embedding_model: str = "BAAI/bge-small-zh-v1.5",
     ):
         self.bm25_weight = bm25_weight
         self.vector_weight = vector_weight
         self.embedding_model = embedding_model
         self.documents: List[Dict] = []
+        self._doc_texts: List[str] = []
+        self._doc_vectors: Optional[np.ndarray] = None
+        self._bm25: Optional[BM25Scorer] = None
+        self._embedding: Optional[EmbeddingService] = None
+        self._vectors_ready: bool = False
+
         self._load_data()
 
     def _load_data(self):
         """加载景区知识库数据"""
         data_dir = os.path.join(os.path.dirname(__file__), "data")
-        # 尝试加载 JSON 数据文件
-        json_files = [
-            os.path.join(data_dir, "attractions.json"),
-            os.path.join(data_dir, "attractions.csv"),
-        ]
-        for f in json_files:
-            if os.path.exists(f):
-                if f.endswith(".json"):
-                    with open(f, "r", encoding="utf-8") as fp:
-                        self.documents = json.load(fp)
-                break
+        json_path = os.path.join(data_dir, "attractions.json")
 
-        # 如果没有外部数据，使用内置数据
-        if not self.documents:
+        if os.path.exists(json_path):
+            with open(json_path, "r", encoding="utf-8") as fp:
+                self.documents = json.load(fp)
+        else:
             self.documents = self._get_builtin_data()
 
+        # 构建检索文本
+        self._build_index()
+
+    def _build_index(self):
+        """构建检索索引"""
+        self._doc_texts = []
+        for doc in self.documents:
+            # 组合检索字段
+            text = " ".join([
+                doc.get("title", ""),
+                doc.get("city", ""),
+                doc.get("type", ""),
+                doc.get("content", ""),
+            ])
+            self._doc_texts.append(text)
+
+        # 初始化 BM25
+        self._bm25 = BM25Scorer()
+        if self._doc_texts:
+            self._bm25.fit(self._doc_texts)
+
+        # 延迟初始化向量（首次检索时进行，避免导入时加载模型）
+        self._vectors_ready = False
+
+    def _ensure_vectors(self):
+        """确保向量已编码（延迟初始化）"""
+        if self._vectors_ready:
+            return
+        if not self._doc_texts:
+            self._vectors_ready = True
+            return
+
+        self._embedding = embedding_service
+        try:
+            self._doc_vectors = self._embedding.encode(self._doc_texts)
+        except Exception:
+            # 向量编码失败，降级为纯 BM25
+            self._doc_vectors = None
+
+        self._vectors_ready = True
+
     def _get_builtin_data(self) -> List[Dict]:
-        """内置景区知识库（当没有外部数据文件时使用）"""
+        """内置景区知识库"""
         return [
             {"title": "故宫博物院", "city": "北京", "type": "历史文化",
              "content": "故宫博物院位于北京中轴线中心，是中国明清两代的皇家宫殿，旧称紫禁城。"
@@ -94,6 +211,8 @@ class HybridRetriever:
              "duration": "全天", "price": 190, "kid_friendly": True},
         ]
 
+    # ========== 检索接口 ==========
+
     def search(self, query: str, top_k: int = 5) -> List[Dict]:
         """执行混合检索
 
@@ -102,48 +221,79 @@ class HybridRetriever:
             top_k: 返回结果数量
 
         Returns:
-            排序后的文档列表
+            排序后的文档列表，每项附带 _bm25_score 和 _vector_score
         """
         if not self.documents:
             return []
 
-        query_lower = query.lower()
-        scored = []
+        self._ensure_vectors()
+        n_docs = len(self._doc_texts)
+        scores = np.zeros(n_docs)
 
-        for doc in self.documents:
-            score = self._compute_score(query_lower, doc)
-            if score > 0:
-                scored.append((score, doc))
+        # 1. BM25 分数
+        for i in range(n_docs):
+            scores[i] = self._bm25.score(query, i)
 
-        # 按分数降序排列，取 top_k
-        scored.sort(key=lambda x: x[0], reverse=True)
-        return [doc for _, doc in scored[:top_k]]
+        # 2. 向量语义分数
+        if self._doc_vectors is not None and len(self._doc_vectors) > 0:
+            try:
+                query_vec = self._embedding.encode_query(query)
+                vec_scores = EmbeddingService.batch_similarity(
+                    query_vec, self._doc_vectors
+                )
+                # 将余弦相似度 [-1, 1] 映射到 [0, 1]
+                vec_scores = (vec_scores + 1) / 2
+                scores = (
+                    self.bm25_weight * self._normalize_scores(scores)
+                    + self.vector_weight * vec_scores
+                )
+            except Exception:
+                # 向量检索失败，仅用 BM25
+                pass
 
-    def _compute_score(self, query: str, doc: Dict) -> float:
-        """计算文档与查询的相关性分数
+        # 排序取 top_k
+        idxs = np.argsort(scores)[::-1][:top_k]
+        results = []
+        for idx in idxs:
+            if scores[idx] > 0:
+                doc = dict(self.documents[idx])
+                doc["_score"] = round(float(scores[idx]), 4)
+                doc["_bm25_weight"] = self.bm25_weight
+                doc["_vector_weight"] = self.vector_weight
+                doc["_using_embeddings"] = self._doc_vectors is not None
+                results.append(doc)
 
-        使用简化的 TF 匹配（V1 版本），后续可升级为 BM25 + 向量相似度。
-        """
-        # 检查各字段的匹配情况
-        fields = [
-            doc.get("title", ""),
-            doc.get("city", ""),
-            doc.get("type", ""),
-            doc.get("content", ""),
-        ]
-        combined = " ".join(fields).lower()
+        return results
 
-        # 简单的关键词匹配分数
-        score = 0.0
-        keywords = query.split()
-        for kw in keywords:
-            if kw in combined:
-                # 标题匹配权重更高
-                if kw in doc.get("title", "").lower():
-                    score += 3.0
-                elif kw in doc.get("type", "").lower():
-                    score += 2.0
-                else:
-                    score += 1.0
+    @staticmethod
+    def _normalize_scores(scores: np.ndarray) -> np.ndarray:
+        """将分数归一化到 [0, 1]"""
+        smax = scores.max()
+        if smax > 0:
+            return scores / smax
+        return scores
 
-        return score
+    # ========== 状态查询 ==========
+
+    @property
+    def using_embeddings(self) -> bool:
+        """是否正在使用向量检索"""
+        return self._doc_vectors is not None
+
+    @property
+    def backend_name(self) -> str:
+        """当前使用的 embedding 后端"""
+        if self._embedding:
+            return self._embedding.backend
+        return "none"
+
+    def stats(self) -> Dict:
+        """检索器统计数据"""
+        return {
+            "total_documents": len(self.documents),
+            "using_embeddings": self.using_embeddings,
+            "embedding_backend": self.backend_name,
+            "embedding_model": self.embedding_model,
+            "bm25_weight": self.bm25_weight,
+            "vector_weight": self.vector_weight,
+        }

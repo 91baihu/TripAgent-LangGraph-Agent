@@ -1,18 +1,40 @@
 """LangGraph Agent 核心 — 构建 StateGraph，编排 Agent 的 ReAct 循环"""
 
+import time
+import os
+
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 from langchain_deepseek import ChatDeepSeek
-from langchain_core.messages import SystemMessage
-import os
+from langchain_core.messages import SystemMessage, AIMessage
 from dotenv import load_dotenv
 
 from .state import AgentState
 from .prompts import SYSTEM_PROMPT
-from ..tools.attractions import search_attractions
-from ..tools.weather import get_weather
-from ..tools.route import plan_route
-from ..tools.restaurants import search_restaurants
+
+# 兼容 Streamlit (运行目录为 src/) 和 FastAPI (包导入) 两种方式
+try:
+    from ..tools.attractions import search_attractions
+    from ..tools.weather import get_weather
+    from ..tools.route import plan_route
+    from ..tools.restaurants import search_restaurants
+    from ..tools.hotels import search_hotels
+    from ..server.token_tracker import token_tracker
+except ImportError:
+    from tools.attractions import search_attractions
+    from tools.weather import get_weather
+    from tools.route import plan_route
+    from tools.restaurants import search_restaurants
+    from tools.hotels import search_hotels
+    # Token tracker 可能不在路径中
+    try:
+        from server.token_tracker import token_tracker
+    except ImportError:
+        # 创建一个空代理
+        class _NoOpTracker:
+            def record_call(self, **kwargs):
+                return None
+        token_tracker = _NoOpTracker()
 
 load_dotenv()
 
@@ -23,8 +45,14 @@ def create_agent():
     Returns:
         CompiledGraph: 编译后的 Agent 状态图，可直接 invoke/stream
     """
-    # 1. 绑定工具到 LLM
-    tools = [search_attractions, get_weather, plan_route, search_restaurants]
+    # 1. 绑定 5 个工具到 LLM（新增酒店搜索工具）
+    tools = [
+        search_attractions,
+        get_weather,
+        plan_route,
+        search_restaurants,
+        search_hotels,
+    ]
     llm = ChatDeepSeek(
         model="deepseek-chat",
         api_key=os.getenv("DEEPSEEK_API_KEY"),
@@ -37,15 +65,17 @@ def create_agent():
     def agent_node(state: AgentState):
         """Agent 思考节点：决定下一步做什么"""
         messages = state["messages"]
+        session_id = state.get("next_step", "")
+
         # 首次调用时注入 system prompt
         if not any(isinstance(m, SystemMessage) for m in messages):
             messages = [SystemMessage(content=SYSTEM_PROMPT)] + messages
 
+        start_time = time.time()
         try:
             response = llm_with_tools.invoke(messages)
         except Exception as e:
             # LLM 调用失败时返回友好提示
-            from langchain_core.messages import AIMessage
             response = AIMessage(
                 content=f"抱歉，AI 服务调用暂时失败：{str(e)[:200]}\n\n"
                         f"请检查：\n"
@@ -53,6 +83,25 @@ def create_agent():
                         f"2. 网络连接是否正常\n"
                         f"3. DeepSeek API 账户余额是否充足"
             )
+
+        # Token 追踪（记录每次 LLM 调用）
+        try:
+            input_text = ""
+            for msg in messages:
+                content = msg.content if hasattr(msg, "content") else str(msg)
+                if isinstance(content, str):
+                    input_text += content
+            output_text = response.content if hasattr(response, "content") else str(response)
+
+            token_tracker.record_call(
+                model="deepseek-chat",
+                input_messages=[{"content": input_text}],
+                output_text=output_text,
+                session_id=session_id,
+            )
+        except Exception:
+            pass  # token 追踪失败不影响主流程
+
         return {"messages": [response]}
 
     tool_node = ToolNode(tools)  # LangGraph 内置工具执行节点
