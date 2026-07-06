@@ -1,0 +1,97 @@
+/* TripAgent QQ 极简风格全局样式 */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== 基础重置 ===== */
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-surface-page text-text-primary font-sans;
+    margin: 0;
+    min-height: 100dvh;
+  }
+
+  /* 滚动条 */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-text-tertiary rounded-full;
+  }
+}
+
+/* ===== 通用组件类 ===== */
+@layer components {
+  /* 骨架屏 shimmer 动画 */
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      #F0F1F3 25%,
+      #E8E9EB 50%,
+      #F0F1F3 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  /* 气泡弹出 */
+  .bubble-enter {
+    animation: bubbleIn 0.2s ease-out;
+  }
+
+  /* 卡片浮现 */
+  .card-enter {
+    animation: cardFadeIn 0.25s ease-out;
+  }
+}
+
+/* ===== 动画关键帧 ===== */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes bubbleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* ===== 动效偏好适配 ===== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

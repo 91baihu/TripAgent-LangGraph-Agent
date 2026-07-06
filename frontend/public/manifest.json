@@ -1,0 +1,16 @@
+{
+  "name": "TripAgent — AI 旅行规划",
+  "short_name": "TripAgent",
+  "description": "AI 驱动的旅行规划助手，自主调用多工具，多步推理输出完整行程",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5F6F8",
+  "theme_color": "#12B7F5",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml"
+    }
+  ]
+}
