@@ -7,8 +7,16 @@ import { endpoints } from "../services/endpoints";
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
 export function useChatStream() {
-  const { addMessage, setStreaming, addToolStep, updateToolResult, clearSteps } =
-    useChatStore();
+  const {
+    addMessage,
+    setStreaming,
+    addToolStep,
+    updateToolResult,
+    clearSteps,
+    addGeoRoute,
+    addRestaurantRanking,
+    addHotelRanking,
+  } = useChatStore();
   const abortRef = useRef<AbortController | null>(null);
 
   const sendMessage = useCallback(
@@ -92,6 +100,29 @@ export function useChatStream() {
                     break;
                   case "error":
                     fullReply = `❌ ${payload.message}`;
+                    break;
+                  case "geo_data":
+                    // 解析可视化数据事件
+                    try {
+                      const geoPayload =
+                        typeof payload.data === "string"
+                          ? JSON.parse(payload.data)
+                          : payload;
+                      if (geoPayload.geo_type === "route") {
+                        addGeoRoute({
+                          spots: geoPayload.spots || [],
+                          distance_km: geoPayload.distance_km || 0,
+                          duration_min: geoPayload.duration_min || 0,
+                          transport: geoPayload.transport || "",
+                        });
+                      } else if (geoPayload.geo_type === "restaurant_ranking") {
+                        addRestaurantRanking(geoPayload.items || []);
+                      } else if (geoPayload.geo_type === "hotel_ranking") {
+                        addHotelRanking(geoPayload.items || []);
+                      }
+                    } catch {
+                      // 解析失败不影响主流程
+                    }
                     break;
                   case "done":
                     if (fullReply) {

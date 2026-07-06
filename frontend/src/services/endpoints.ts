@@ -25,6 +25,7 @@ export const endpoints = {
     getWeather: "/tools/get_weather",
     planRoute: "/tools/plan_route",
     searchRestaurants: "/tools/search_restaurants",
+    searchHotels: "/tools/search_hotels",
   },
 
   // 认证

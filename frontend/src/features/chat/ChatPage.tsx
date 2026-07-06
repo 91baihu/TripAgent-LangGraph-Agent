@@ -7,6 +7,9 @@ import { Button } from "../../components/Button/Button";
 import { TripCardSkeleton } from "../../components/Skeleton/Skeleton";
 import { useChatStore } from "../../stores/chatStore";
 import { useChatStream } from "../../hooks/useChatStream";
+import { MiniRouteMap } from "../../components/MiniRouteMap/MiniRouteMap";
+import { RankingList, HotelRankingList } from "../../components/RankingList/RankingList";
+import { Timeline } from "../../components/Timeline/Timeline";
 
 const QUICK_SUGGESTIONS = [
   { emoji: "🏖️", label: "北京3日亲子游" },
@@ -15,7 +18,8 @@ const QUICK_SUGGESTIONS = [
 ];
 
 export function ChatPage() {
-  const { messages, isStreaming, toolSteps } = useChatStore();
+  const { messages, isStreaming, toolSteps, geoRoutes, restaurantRankings, hotelRankings } =
+    useChatStore();
   const { sendMessage, cancelStream } = useChatStream();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -101,23 +105,66 @@ export function ChatPage() {
             {/* 思考中 */}
             {isStreaming && <ThinkingBubble />}
 
-            {/* 工具调用展示 */}
+            {/* 工具调用展示 — 嵌入可视化组件 */}
             {toolSteps.length > 0 && (
               <div className="my-3 p-3 bg-primary-light rounded-card border border-primary/10">
                 <p className="text-caption text-primary font-medium mb-2">
                   🔍 Agent 推理过程
                 </p>
-                {toolSteps.map((step) => (
-                  <div key={step.step} className="text-small text-text-secondary mb-1">
-                    <span className="text-text-primary font-medium">
-                      Step {step.step}:
-                    </span>{" "}
-                    调用 <span className="text-primary">{step.tool}</span>
-                    {step.result && (
-                      <span className="text-semantic-success"> ✓ 完成</span>
-                    )}
-                  </div>
-                ))}
+                {toolSteps.map((step) => {
+                  const stepGeoRoutes = geoRoutes.filter(
+                    (_, i) => geoRoutes.length - toolSteps.length + step.step === i
+                  );
+                  const stepRankings = restaurantRankings.filter(
+                    (_, i) => restaurantRankings.length - toolSteps.length + step.step === i
+                  );
+                  const stepHotelRankings = hotelRankings.filter(
+                    (_, i) => hotelRankings.length - toolSteps.length + step.step === i
+                  );
+
+                  return (
+                    <div key={step.step}>
+                      <div className="text-small text-text-secondary mb-1">
+                        <span className="text-text-primary font-medium">
+                          Step {step.step}:
+                        </span>{" "}
+                        调用 <span className="text-primary">{step.tool}</span>
+                        {step.result && (
+                          <span className="text-semantic-success"> ✓ 完成</span>
+                        )}
+                      </div>
+
+                      {/* 路线 → 迷你地图 */}
+                      {step.tool === "plan_route" &&
+                        geoRoutes.map((route, i) => (
+                          <MiniRouteMap
+                            key={`route-${i}`}
+                            spots={route.spots}
+                            distance_km={route.distance_km}
+                            transport={route.transport}
+                          />
+                        ))}
+
+                      {/* 餐厅 → 排行榜 */}
+                      {step.tool === "search_restaurants" &&
+                        restaurantRankings.map((items, i) => (
+                          <RankingList
+                            key={`ranking-${i}`}
+                            items={items}
+                          />
+                        ))}
+
+                      {/* 酒店 → 酒店卡片 */}
+                      {step.tool === "search_hotels" &&
+                        hotelRankings.map((items, i) => (
+                          <HotelRankingList
+                            key={`hotel-ranking-${i}`}
+                            items={items}
+                          />
+                        ))}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

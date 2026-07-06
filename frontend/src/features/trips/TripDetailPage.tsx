@@ -6,16 +6,27 @@ import { Card } from "../../components/Card/Card";
 import { Button } from "../../components/Button/Button";
 import { Tag } from "../../components/Tag/Tag";
 import { Skeleton } from "../../components/Skeleton/Skeleton";
+import { Timeline, type TimelineSpot } from "../../components/Timeline/Timeline";
 import { api } from "../../services/api";
 import { endpoints } from "../../services/endpoints";
 import { showToast } from "../../components/Toast/ToastContainer";
+
+interface TripSpot {
+  name: string;
+  time: string;
+  price: number;
+  duration?: string;
+  transport?: string;
+  next_spot?: string;
+  next_distance?: string;
+}
 
 interface Trip {
   id: string;
   title: string;
   city: string;
   days: number;
-  itinerary_json: Record<string, Array<{ name: string; time: string; price: number }>>;
+  itinerary_json: Record<string, TripSpot[]>;
   status: string;
   share_token?: string;
   created_at: string;
@@ -106,36 +117,29 @@ export function TripDetailPage() {
           </div>
         </Card>
 
-        {/* 每日行程 */}
-        {Object.entries(trip.itinerary_json).map(([dayKey, spots]) => (
-          <Card key={dayKey}>
-            <h3 className="text-h3 text-text-primary mb-3">
-              📅 {dayKey}
-            </h3>
-            <div className="space-y-2">
-              {Array.isArray(spots) &&
-                spots.map((spot, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-3 p-3 bg-surface-page rounded-button"
-                  >
-                    <span className="w-6 h-6 rounded-full bg-primary text-text-inverse text-small flex items-center justify-center flex-shrink-0 mt-0.5">
-                      {i + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-body text-text-primary font-medium">
-                        {spot.name}
-                      </p>
-                      <p className="text-caption text-text-secondary">
-                        {spot.time}
-                        {spot.price > 0 && ` · ¥${spot.price}`}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </Card>
-        ))}
+        {/* 每日行程 — 使用 Timeline 组件 */}
+        {Object.entries(trip.itinerary_json).map(([dayKey, spots]) => {
+          const timelineSpots: TimelineSpot[] = Array.isArray(spots)
+            ? spots.map((spot) => ({
+                time: spot.time,
+                name: spot.name,
+                duration: spot.duration || "2h",
+                price: spot.price || 0,
+                transport: spot.transport,
+                nextSpot: spot.next_spot,
+                nextDistance: spot.next_distance,
+              }))
+            : [];
+
+          return (
+            <Card key={dayKey} padding className="shadow-card">
+              <Timeline
+                dayLabel={dayKey}
+                spots={timelineSpots}
+              />
+            </Card>
+          );
+        })}
 
         {/* 操作按钮 */}
         <div className="flex gap-3 pt-2 pb-6">

@@ -9,23 +9,22 @@ import { ToastContainer } from "./components/Toast/ToastContainer";
 
 export default function App() {
   return (
-    <div className="flex flex-col min-h-dvh max-w-lg mx-auto relative">
-      {/* 主内容区 */}
-      <main className="flex-1 overflow-y-auto pb-14">
-        <Routes>
-          <Route path="/" element={<ChatPage />} />
-          <Route path="/trips" element={<TripListPage />} />
-          <Route path="/trips/:id" element={<TripDetailPage />} />
-          <Route path="/trips/:id/map" element={<MapView />} />
-          <Route path="/login" element={<LoginPage />} />
-        </Routes>
-      </main>
+    <ToastContainer>
+      <div className="flex flex-col min-h-dvh max-w-lg mx-auto relative">
+        {/* 主内容区 */}
+        <main className="flex-1 overflow-y-auto pb-14">
+          <Routes>
+            <Route path="/" element={<ChatPage />} />
+            <Route path="/trips" element={<TripListPage />} />
+            <Route path="/trips/:id" element={<TripDetailPage />} />
+            <Route path="/trips/:id/map" element={<MapView />} />
+            <Route path="/login" element={<LoginPage />} />
+          </Routes>
+        </main>
 
-      {/* 全局底部导航 */}
-      <BottomNav />
-
-      {/* 全局 Toast */}
-      <ToastContainer />
-    </div>
+        {/* 全局底部导航 */}
+        <BottomNav />
+      </div>
+    </ToastContainer>
   );
 }
