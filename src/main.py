@@ -1,10 +1,10 @@
-"""TripAgent 入口 — Streamlit 对话式交互界面（含推理可视化 + 流式输出 + 多轮记忆）"""
+"""TripAgent 入口 — Streamlit 对话式交互界面（推理可视化 · 流式输出 · 多轮记忆）"""
 
 import streamlit as st
 from agent.graph import create_agent
 from langchain_core.messages import ToolMessage, AIMessage, HumanMessage
 
-st.set_page_config(page_title="TripAgent", page_icon="✈️", layout="wide")
+st.set_page_config(page_title="TripAgent · AI 旅行规划", page_icon="✈️", layout="wide")
 
 # === 初始化 Session State ===
 if "agent" not in st.session_state:
@@ -18,8 +18,8 @@ if "trace" not in st.session_state:
 col_main, col_sidebar = st.columns([3, 2])
 
 with col_main:
-    st.title("✈️ TripAgent — AI 旅行规划助手")
-    st.caption("用自然语言描述旅行需求，Agent 自主调用多工具、多步推理，输出完整行程方案。")
+    st.title("✈️ TripAgent · AI 旅行规划助手")
+    st.caption("用自然语言描述旅行需求，智能助手自主调用多工具、多步推理，为你生成完整行程方案。")
 
     # 渲染历史消息
     for msg in st.session_state.messages:
@@ -27,7 +27,7 @@ with col_main:
             st.markdown(msg["content"])
 
     # 用户输入
-    if prompt := st.chat_input("告诉我你的旅行需求，比如：帮我规划3天北京亲子游"):
+    if prompt := st.chat_input("说说你的旅行需求，比如：帮我规划3天北京亲子游"):
         # 添加用户消息
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
@@ -45,7 +45,7 @@ with col_main:
                 for m in st.session_state.messages
             ]
 
-            with st.spinner("Agent 思考中..."):
+            with st.spinner("🤔 正在为你规划行程，请稍候..."):
                 try:
                     for event in st.session_state.agent.stream(
                         {"messages": input_messages,
@@ -89,10 +89,10 @@ with col_main:
                         final_reply = final_msg.content if hasattr(final_msg, "content") else str(final_msg)
 
                 except Exception as e:
-                    final_reply = f"❌ Agent 处理出错：{str(e)}\n\n请检查 DeepSeek API Key 是否已正确配置在 .env 文件中。"
+                    final_reply = f"❌ 处理出错：{str(e)}\n\n请检查：\n1. .env 文件中的 DEEPSEEK_API_KEY 是否正确\n2. 网络连接是否正常\n3. DeepSeek API 账户余额是否充足"
                     trace.append({
                         "num": step_num + 1,
-                        "action": "❌ 错误",
+                        "action": "❌ 出错",
                         "thought": str(e)[:300]
                     })
 
@@ -105,37 +105,37 @@ with col_main:
 
 # === 右侧：推理追踪面板 ===
 with col_sidebar:
-    st.subheader("🔍 Agent 推理过程")
-    st.caption("实时展示 Agent 的每一步推理决策")
+    st.subheader("🔍 推理过程追踪")
+    st.caption("实时展示智能助手每一步推理决策，让 AI 思考透明可见。")
 
     if st.session_state.trace:
         for step in st.session_state.trace:
             emoji = step["action"].split(" ")[0] if " " in step["action"] else "📌"
-            with st.expander(f"{emoji} Step {step['num']}: {step['action']}", expanded=(step["action"] == "🔧 调用工具")):
+            with st.expander(f"{emoji} 第{step['num']}步：{step['action']}", expanded=(step["action"] == "🔧 调用工具")):
                 if "调用工具" in step["action"]:
-                    st.caption(f"🔨 工具: **{step['tool']}**")
-                    st.caption("📥 输入参数:")
+                    st.caption(f"🔨 调用的工具：**{step['tool']}**")
+                    st.caption("📥 输入参数：")
                     st.json(step["input"])
                     if "output" in step:
-                        st.caption("📤 返回结果:")
+                        st.caption("📤 返回结果：")
                         st.text(step["output"])
                     else:
                         st.caption("⏳ 执行中...")
                 elif "综合回复" in step["action"]:
                     st.text(step.get("thought", ""))
-                elif "错误" in step["action"]:
+                elif "出错" in step["action"]:
                     st.error(step.get("thought", ""))
     else:
-        st.info("👆 发送一条消息来观察 Agent 的推理过程...")
+        st.info("👆 发送一条消息来观察智能助手的推理过程...")
         st.markdown("""
         **你会看到：**
-        - Agent 决定调用哪个工具
-        - 传入的参数是什么
-        - 工具返回了什么结果
-        - Agent 如何综合信息输出最终方案
+        - 🧠 智能助手决定调用哪个工具
+        - 📥 传入的参数是什么
+        - 📤 工具返回了什么结果
+        - 💬 智能助手如何综合信息生成最终方案
         """)
 
     # 底部：状态栏
     st.divider()
-    st.caption(f"💬 对话轮次: {len(st.session_state.messages) // 2}")
-    st.caption(f"🔧 历史工具调用次数: {len([s for s in st.session_state.trace if '调用工具' in s.get('action', '')])}")
+    st.caption(f"💬 对话轮次：{len(st.session_state.messages) // 2}")
+    st.caption(f"🔧 工具调用次数：{len([s for s in st.session_state.trace if '调用工具' in s.get('action', '')])}")
