@@ -1,6 +1,6 @@
 """Agent 服务层 — 将 LangGraph Agent 封装为无状态服务"""
 
-from typing import AsyncIterator, Dict, Any
+from typing import AsyncIterator, Dict, Any, Optional
 from dataclasses import dataclass, field
 
 from langchain_core.messages import AIMessage, ToolMessage, SystemMessage
@@ -9,17 +9,78 @@ try:
     from ...agent.graph import create_agent
     from ...agent.state import AgentState
     from ...agent.prompts import SYSTEM_PROMPT
+    from ...tools.result_parser import (
+        parse_route_result,
+        parse_restaurant_result,
+        parse_hotel_result,
+    )
 except ImportError:
     from agent.graph import create_agent
     from agent.state import AgentState
     from agent.prompts import SYSTEM_PROMPT
+    from tools.result_parser import (
+        parse_route_result,
+        parse_restaurant_result,
+        parse_hotel_result,
+    )
 
 
 @dataclass
 class AgentEvent:
     """Agent 流式事件的标准化结构"""
-    type: str          # "tool_call" | "tool_result" | "thinking" | "reply" | "error" | "done"
+    type: str          # "tool_call" | "tool_result" | "thinking" | "reply" | "error" | "done" | "geo_data"
     data: Dict[str, Any] = field(default_factory=dict)
+
+
+def _build_geo_event(tool_name: str, tool_content: str) -> Optional[AgentEvent]:
+    """根据工具名称和返回内容构建 geo_data 事件
+
+    Args:
+        tool_name: 工具名称 (plan_route, search_restaurants, search_hotels)
+        tool_content: 工具返回的 Markdown 文本
+
+    Returns:
+        AgentEvent 或 None（解析失败时）
+    """
+    if tool_name == "plan_route":
+        parsed = parse_route_result(tool_content)
+        return AgentEvent(
+            type="geo_data",
+            data={
+                "geo_type": "route",
+                "spots": parsed.get("spots", []),
+                "distance_km": parsed.get("distance_km", 0),
+                "duration_min": parsed.get("duration_min", 0),
+                "transport": parsed.get("transport", ""),
+            },
+        )
+    elif tool_name == "search_restaurants":
+        parsed = parse_restaurant_result(tool_content)
+        items = parsed.get("items", [])
+        if items:
+            return AgentEvent(
+                type="geo_data",
+                data={
+                    "geo_type": "restaurant_ranking",
+                    "city": parsed.get("city", ""),
+                    "near_spot": parsed.get("near_spot", ""),
+                    "items": items,
+                },
+            )
+    elif tool_name == "search_hotels":
+        parsed = parse_hotel_result(tool_content)
+        items = parsed.get("items", [])
+        if items:
+            return AgentEvent(
+                type="geo_data",
+                data={
+                    "geo_type": "hotel_ranking",
+                    "city": parsed.get("city", ""),
+                    "near_spot": parsed.get("near_spot", ""),
+                    "items": items,
+                },
+            )
+    return None
 
 
 class TravelAgentService:
@@ -89,14 +150,24 @@ class TravelAgentService:
 
                 # 工具返回事件
                 elif isinstance(last_msg, ToolMessage):
+                    tool_name = last_msg.name if hasattr(last_msg, "name") else "unknown"
+                    tool_content = last_msg.content if last_msg.content else ""
                     yield AgentEvent(
                         type="tool_result",
                         data={
                             "step": step_num,
-                            "tool": last_msg.name if hasattr(last_msg, "name") else "unknown",
-                            "result": last_msg.content[:500] if last_msg.content else "",
+                            "tool": tool_name,
+                            "result": tool_content[:500],
                         },
                     )
+
+                    # 解析工具结果，发送 geo_data 事件供前端可视化使用
+                    try:
+                        geo_event = _build_geo_event(tool_name, tool_content)
+                        if geo_event:
+                            yield geo_event
+                    except Exception:
+                        pass  # 解析失败不影响主流程
 
                 # 最终回复事件
                 elif isinstance(last_msg, AIMessage) and last_msg.content:
