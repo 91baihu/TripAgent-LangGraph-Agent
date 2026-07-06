@@ -16,7 +16,23 @@ from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+
+# bcrypt 直接调用（避免 passlib 版本兼容问题）
+try:
+    import bcrypt as _bcrypt
+
+    def hash_password(password: str) -> str:
+        return _bcrypt.hashpw(password.encode(), _bcrypt.gensalt()).decode()
+
+    def verify_password(plain_password: str, hashed_password: str) -> bool:
+        return _bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
+except ImportError:
+    # 降级：使用 passlib（如果 bcrypt 不可用）
+    from passlib.context import CryptContext
+    _pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    hash_password = lambda p: _pwd_ctx.hash(p)  # noqa: E731
+    verify_password = lambda p, h: _pwd_ctx.verify(p, h)  # noqa: E731
+
 
 # ========== 配置 ==========
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev_secret_key_change_in_production_12345678")
@@ -24,23 +40,8 @@ JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
-# ========== 密码上下文 ==========
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# ========== HTTP Bearer 安全方案 ==========
+# ========== HTTP Bearer ==========
 bearer_scheme = HTTPBearer(auto_error=False)
-
-
-# ========== 密码工具 ==========
-def hash_password(password: str) -> str:
-    """哈希密码"""
-    return pwd_context.hash(password)
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """验证密码"""
-    return pwd_context.verify(plain_password, hashed_password)
-
 
 # ========== JWT 工具 ==========
 def create_access_token(user_id: str, role: str = "free") -> str:

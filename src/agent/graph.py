@@ -9,10 +9,18 @@ from dotenv import load_dotenv
 
 from .state import AgentState
 from .prompts import SYSTEM_PROMPT
-from ..tools.attractions import search_attractions
-from ..tools.weather import get_weather
-from ..tools.route import plan_route
-from ..tools.restaurants import search_restaurants
+
+# 兼容 Streamlit (运行目录为 src/) 和 FastAPI (包导入) 两种方式
+try:
+    from ..tools.attractions import search_attractions
+    from ..tools.weather import get_weather
+    from ..tools.route import plan_route
+    from ..tools.restaurants import search_restaurants
+except ImportError:
+    from tools.attractions import search_attractions
+    from tools.weather import get_weather
+    from tools.route import plan_route
+    from tools.restaurants import search_restaurants
 
 load_dotenv()
 

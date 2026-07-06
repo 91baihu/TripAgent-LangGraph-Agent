@@ -17,12 +17,14 @@ from .logging import logger
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """启动/关闭钩子"""
-    logger.info("tripagent_starting", env=os.getenv("APP_ENV", "dev"))
+    logger.info(f"tripagent_starting env={os.getenv('APP_ENV', 'dev')}")
     yield
     logger.info("tripagent_shutting_down")
-    from .database import close_db
-
-    await close_db()
+    try:
+        from .database import close_db
+        await close_db()
+    except ImportError:
+        pass
 
 
 def create_app() -> FastAPI:
@@ -61,12 +63,9 @@ def create_app() -> FastAPI:
         # 访问日志
         latency_ms = (time.time() - start_time) * 1000
         logger.info(
-            "request",
-            method=request.method,
-            path=request.url.path,
-            status=response.status_code,
-            latency_ms=round(latency_ms, 1),
-            request_id=request_id,
+            f"request method={request.method} path={request.url.path} "
+            f"status={response.status_code} latency={round(latency_ms, 1)}ms "
+            f"rid={request_id}"
         )
         response.headers["X-Request-ID"] = request_id
         return response
@@ -76,10 +75,8 @@ def create_app() -> FastAPI:
     async def global_exception_handler(request: Request, exc: Exception):
         request_id = getattr(request.state, "request_id", "unknown")
         logger.error(
-            "unhandled_error",
-            path=request.url.path,
-            error=str(exc),
-            request_id=request_id,
+            f"unhandled_error path={request.url.path} "
+            f"error={str(exc)} rid={request_id}"
         )
         return JSONResponse(
             status_code=500,

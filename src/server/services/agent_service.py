@@ -5,9 +5,14 @@ from dataclasses import dataclass, field
 
 from langchain_core.messages import AIMessage, ToolMessage, SystemMessage
 
-from ...agent.graph import create_agent
-from ...agent.state import AgentState
-from ...agent.prompts import SYSTEM_PROMPT
+try:
+    from ...agent.graph import create_agent
+    from ...agent.state import AgentState
+    from ...agent.prompts import SYSTEM_PROMPT
+except ImportError:
+    from agent.graph import create_agent
+    from agent.state import AgentState
+    from agent.prompts import SYSTEM_PROMPT
 
 
 @dataclass
