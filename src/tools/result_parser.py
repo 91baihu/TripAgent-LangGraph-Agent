@@ -315,6 +315,8 @@ def _parse_hotel_items(text: str) -> List[Dict[str, Any]]:
         price_match = re.search(r"¥\s*(\d+)\s*/晚", details)
         if price_match:
             item["price_per_night"] = int(price_match.group(1))
+        elif "价格请电话咨询" in text or "价格请电话咨询" in details:
+            item["price_per_night"] = -1
 
         # 提取距离
         dist_match = re.search(r"📏\s*([\d.]+)\s*(km|m)", details)
@@ -325,20 +327,30 @@ def _parse_hotel_items(text: str) -> List[Dict[str, Any]]:
             else:
                 item["distance_m"] = int(dist_val)
 
-        # 提取特点和地址（第二行）
-        next_line_match = re.search(
-            rf"{re.escape(name)}\|.*\n\s*(.+?)(?:\n|$)", text
-        )
-        if next_line_match:
-            extra = next_line_match.group(1).strip()
-            addr_match = re.search(r"📍\s*(.+?)(?:\s*📏|\s*$)", extra)
-            if addr_match:
-                item["address"] = addr_match.group(1).strip()
-            # 剩余部分作为特点
-            if "📍" in extra:
-                item["feature"] = extra.split("📍")[0].strip()
-            else:
-                item["feature"] = extra
+        # 提取地址和特点（从详情文本中搜索📍标记）
+        addr_match = re.search(r"📍\s*(.+?)(?:\s*📏|\s*\n|\s*$)", details)
+        if addr_match:
+            item["address"] = addr_match.group(1).strip()
+
+        # 特点文本 = 详情中去除地址部分后的内容
+        # 尝试从原始文本中提取第二行
+        lines = text.split("\n")
+        for i, line in enumerate(lines):
+            if name in line and i + 1 < len(lines):
+                extra = lines[i + 1].strip()
+                if extra and not extra.startswith("*"):
+                    # 提取地址
+                    addr_m = re.search(r"📍\s*(.+?)(?:\s*📏|\s*💰|\s*$)", extra)
+                    if addr_m:
+                        item["address"] = addr_m.group(1).strip()
+                    # 特点 = 地址前的文本
+                    if "📍" in extra:
+                        item["feature"] = extra.split("📍")[0].strip()
+                    elif "💰" in extra:
+                        item["feature"] = extra.split("💰")[0].strip()
+                    else:
+                        item["feature"] = extra
+                    break
 
         # 查找坐标
         lat, lng = _get_coordinate(name)
@@ -346,6 +358,11 @@ def _parse_hotel_items(text: str) -> List[Dict[str, Any]]:
         item["lng"] = lng
 
         items.append(item)
+
+    # 如果没有解析到价格，设提示
+    for item in items:
+        if item["price_per_night"] == 0:
+            item["price_per_night"] = -1  # -1 表示价格待询
 
     return items
 

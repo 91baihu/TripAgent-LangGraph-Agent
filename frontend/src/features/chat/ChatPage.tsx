@@ -5,9 +5,10 @@ import { Bubble, ThinkingBubble } from "../../components/Bubble/Bubble";
 import { Tag } from "../../components/Tag/Tag";
 import { useChatStore } from "../../stores/chatStore";
 import { useChatStream } from "../../hooks/useChatStream";
-import { ToolStepChip } from "./ToolStepCard";
+import { ToolStepChip, StepsSummary } from "./ToolStepCard";
 import { VisualizationPanel } from "./VisualizationPanel";
 import { ViewSwitcher, type MobileView } from "../../components/ViewSwitcher/ViewSwitcher";
+import { SearchProgress } from "./SearchProgress";
 
 const QUICK_SUGGESTIONS = [
   { emoji: "🏖️", label: "北京3日亲子游" },
@@ -21,6 +22,7 @@ export function ChatPage() {
     isStreaming,
     streamingReply,
     toolSteps,
+    stepsCollapsed,
   } = useChatStore();
   const { sendMessage, cancelStream } = useChatStream();
   const [input, setInput] = useState("");
@@ -105,12 +107,20 @@ export function ChatPage() {
             <ThinkingBubble />
           )}
 
-          {/* 紧凑工具调用指示器 */}
+          {/* 紧凑工具调用指示器（可折叠） */}
           {toolSteps.length > 0 && (
             <div className="my-2 py-1">
-              {toolSteps.map((step) => (
-                <ToolStepChip key={step.step} step={step} />
-              ))}
+              {stepsCollapsed ? (
+                <StepsSummary
+                  count={toolSteps.length}
+                  doneCount={toolSteps.filter((s) => s.result).length}
+                  onExpand={() => useChatStore.getState().expandSteps()}
+                />
+              ) : (
+                toolSteps.map((step) => (
+                  <ToolStepChip key={step.step} step={step} />
+                ))
+              )}
             </div>
           )}
         </div>
@@ -198,10 +208,13 @@ export function ChatPage() {
 
       {/* ===== 桌面端：左右分屏 ===== */}
       <div className="hidden md:flex flex-1 min-h-0">
-        {/* 左栏：聊天 */}
+        {/* 左栏：聊天 — 居中限宽 */}
         <div className="flex-1 flex flex-col min-w-0 border-r border-divider">
-          {chatContent}
-          {inputBar}
+          <div className="max-w-2xl mx-auto w-full flex flex-col flex-1 min-h-0">
+            {chatContent}
+            <SearchProgress />
+            {inputBar}
+          </div>
         </div>
 
         {/* 右栏：可视化面板 */}
@@ -217,6 +230,9 @@ export function ChatPage() {
         ) : (
           mobilePanel(mobileView)
         )}
+
+        {/* 进度条（对话视图时显示） */}
+        {mobileView === "chat" && <SearchProgress />}
 
         {/* 输入栏（对话视图时显示） */}
         {mobileView === "chat" && inputBar}

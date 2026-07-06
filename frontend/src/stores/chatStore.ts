@@ -52,6 +52,7 @@ export interface HotelRankingItem {
   distance_m: number;
   type: string;
   feature: string;
+  address: string;
 }
 
 interface ChatState {
@@ -74,12 +75,22 @@ interface ChatState {
   // 🔍 推理面板
   traceExpanded: boolean;
 
+  // 📋 步骤折叠（方案A）
+  stepsCollapsed: boolean;
+
+  // 📊 检索进度（方案C）
+  progressPhase: string;
+  progressPercent: number;
+
   // 现有 actions
   addMessage: (role: "user" | "assistant", content: string) => void;
   setStreaming: (v: boolean) => void;
   addToolStep: (step: ToolStep) => void;
   updateToolResult: (stepNum: number, result: string) => void;
   clearSteps: () => void;
+  collapseSteps: () => void;
+  expandSteps: () => void;
+  setProgress: (phase: string, percent: number) => void;
 
   // 🆕 actions
   addGeoRoute: (route: GeoRouteData) => void;
@@ -108,6 +119,9 @@ export const useChatStore = create<ChatState>((set) => ({
   weatherData: null,
   streamingReply: "",
   traceExpanded: false,
+  stepsCollapsed: false,
+  progressPhase: "",
+  progressPercent: 0,
 
   addMessage: (role, content) =>
     set((state) => ({
@@ -139,11 +153,23 @@ export const useChatStore = create<ChatState>((set) => ({
   clearSteps: () =>
     set({
       toolSteps: [],
+      stepsCollapsed: false,
+      progressPhase: "",
+      progressPercent: 0,
+      // 清空旧可视化数据（新查询时替换）
       geoRoutes: [],
       restaurantRankings: [],
       hotelRankings: [],
       weatherData: null,
     }),
+
+  // 📋 步骤折叠（方案A）
+  collapseSteps: () => set({ stepsCollapsed: true }),
+  expandSteps: () => set({ stepsCollapsed: false }),
+
+  // 📊 检索进度（方案C）
+  setProgress: (phase, percent) =>
+    set({ progressPhase: phase, progressPercent: percent }),
 
   // 🆕 可视化数据 actions
   addGeoRoute: (route) =>

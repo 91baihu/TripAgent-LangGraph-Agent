@@ -63,6 +63,11 @@ function loadAmapSDK(): Promise<void> {
     window._amap_callbacks = [resolve];
 
     const key = import.meta.env.VITE_AMAP_JS_KEY || "";
+    // 空 Key 或占位值：直接跳过 SDK 加载，由 MapPanel 走 SVG 降级
+    if (!key || key === "YOUR_AMAP_JS_KEY") {
+      resolve();
+      return;
+    }
     const script = document.createElement("script");
     script.src = `https://webapi.amap.com/maps?v=2.0&key=${key}&plugin=AMap.PolylineEditor,AMap.MoveAnimation`;
     script.async = true;

@@ -42,6 +42,8 @@ export function useChatStream() {
     setWeatherData,
     setStreamingReply,
     finalizeStreamingReply,
+    collapseSteps,
+    setProgress,
   } = useChatStore();
   const abortRef = useRef<AbortController | null>(null);
 
@@ -85,6 +87,7 @@ export function useChatStream() {
         const decoder = new TextDecoder();
         let buffer = "";
         let fullReply = "";
+        let sseEventType = ""; // 跟踪 SSE event: 行类型
 
         while (true) {
           const { done, value } = await reader.read();
@@ -95,20 +98,23 @@ export function useChatStream() {
           buffer = lines.pop() || "";
 
           for (const line of lines) {
+            // 跟踪 SSE event: 行（sse-starlette 发送的标准格式）
+            if (line.startsWith("event:")) {
+              sseEventType = line.slice(6).trim();
+              continue;
+            }
             if (!line.startsWith("data:")) continue;
             const dataStr = line.slice(5).trim();
             if (!dataStr) continue;
 
             try {
-              const event = JSON.parse(dataStr);
+              const data = JSON.parse(dataStr);
 
-              if (typeof event === "object") {
-                const type = event.event || "unknown";
-                // 兼容两种格式：data 嵌套和直接 payload
-                const payload =
-                  typeof event.data === "string"
-                    ? JSON.parse(event.data)
-                    : event.data || event;
+              if (typeof data === "object") {
+                const type = sseEventType || data.event || "unknown";
+                sseEventType = ""; // 消费后重置
+                // data 本身就是 payload（sse-starlette 将 event.data 序列化到 data: 行）
+                const payload = data;
 
                 switch (type) {
                   case "tool_call":
@@ -117,6 +123,19 @@ export function useChatStream() {
                       tool: payload.tool,
                       args: payload.args,
                     });
+                    // 更新进度条（方案C）
+                    {
+                      const phaseMap: Record<string, string> = {
+                        search_attractions: "🔍 正在搜索景点...",
+                        get_weather: "🌤️ 正在查询天气...",
+                        plan_route: "🗺️ 正在规划路线...",
+                        search_restaurants: "🍜 正在搜索美食...",
+                        search_hotels: "🏨 正在搜索酒店...",
+                      };
+                      const phase = phaseMap[payload.tool] || "🔧 正在检索信息...";
+                      const { toolSteps } = useChatStore.getState();
+                      setProgress(phase, Math.min(90, (toolSteps.length + 1) * 18));
+                    }
                     break;
 
                   case "tool_result":
@@ -132,6 +151,7 @@ export function useChatStream() {
                     // 增量显示回复文本
                     fullReply = payload.content || "";
                     setStreamingReply(fullReply);
+                    setProgress("✍️ 正在生成旅行计划...", 95);
                     break;
 
                   case "error":
@@ -143,33 +163,29 @@ export function useChatStream() {
                     break;
 
                   case "geo_data":
-                    // 解析可视化数据事件
+                    // 解析可视化数据事件（payload 直接就是 geo 数据对象）
                     try {
-                      const geoPayload =
-                        typeof payload.data === "string"
-                          ? JSON.parse(payload.data)
-                          : payload;
-                      if (geoPayload.geo_type === "route") {
+                      if (payload.geo_type === "route") {
                         addGeoRoute({
-                          spots: geoPayload.spots || [],
-                          distance_km: geoPayload.distance_km || 0,
-                          duration_min: geoPayload.duration_min || 0,
-                          transport: geoPayload.transport || "",
+                          spots: payload.spots || [],
+                          distance_km: payload.distance_km || 0,
+                          duration_min: payload.duration_min || 0,
+                          transport: payload.transport || "",
                         });
                       } else if (
-                        geoPayload.geo_type === "restaurant_ranking"
+                        payload.geo_type === "restaurant_ranking"
                       ) {
-                        addRestaurantRanking(geoPayload.items || []);
-                      } else if (geoPayload.geo_type === "hotel_ranking") {
-                        addHotelRanking(geoPayload.items || []);
-                      } else if (geoPayload.geo_type === "weather") {
+                        addRestaurantRanking(payload.items || []);
+                      } else if (payload.geo_type === "hotel_ranking") {
+                        addHotelRanking(payload.items || []);
+                      } else if (payload.geo_type === "weather") {
                         setWeatherData({
-                          city: geoPayload.city || "未知",
-                          condition: geoPayload.condition || "未知",
-                          temperature: geoPayload.temperature || "--",
-                          humidity: geoPayload.humidity || "--",
-                          wind: geoPayload.wind || "--",
-                          details: geoPayload.details || "",
+                          city: payload.city || "未知",
+                          condition: payload.condition || "未知",
+                          temperature: payload.temperature || "--",
+                          humidity: payload.humidity || "--",
+                          wind: payload.wind || "--",
+                          details: payload.details || "",
                         });
                       }
                     } catch {
@@ -182,6 +198,11 @@ export function useChatStream() {
                     if (fullReply) {
                       finalizeStreamingReply();
                     }
+                    // 进度条完成 → 0.5s 后清除
+                    setProgress("✅ 完成!", 100);
+                    setTimeout(() => setProgress("", 0), 800);
+                    // 2s 后折叠工具步骤（方案A）
+                    setTimeout(() => collapseSteps(), 2000);
                     break;
                 }
               }
@@ -216,6 +237,8 @@ export function useChatStream() {
       setWeatherData,
       setStreamingReply,
       finalizeStreamingReply,
+      collapseSteps,
+      setProgress,
     ]
   );
 

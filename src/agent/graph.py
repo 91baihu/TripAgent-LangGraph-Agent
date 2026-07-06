@@ -109,10 +109,26 @@ def create_agent():
     # 3. 路由函数：判断继续还是结束
     def should_continue(state: AgentState):
         last_message = state["messages"][-1]
+
         # 如果 LLM 想调工具 → 去 tool_node
         if hasattr(last_message, "tool_calls") and last_message.tool_calls:
             return "tools"
-        # 否则结束
+
+        # 统计已调用的唯一工具名称数
+        called_tools = set()
+        for msg in state["messages"]:
+            if hasattr(msg, "tool_calls") and msg.tool_calls:
+                for tc in msg.tool_calls:
+                    called_tools.add(tc.get("name", ""))
+
+        # 统计已返回结果的工具消息数（每种工具至少调用一次才算有效）
+        tool_result_count = sum(1 for m in state["messages"] if hasattr(m, "name"))
+
+        # 如果工具调用不足 3 种且消息轮次还少，强制继续调用工具
+        if tool_result_count < 3:
+            if len(state["messages"]) < 20:
+                return "tools"  # 强制继续调用工具
+
         return END
 
     # 4. 构建图

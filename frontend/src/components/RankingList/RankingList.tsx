@@ -32,6 +32,7 @@ export interface HotelItem {
   distance_m: number;
   type: string;
   feature: string;
+  address: string;
 }
 
 const RANK_COLORS: Record<number, string> = {
@@ -110,6 +111,11 @@ export function RankingList({
                 <p className="text-caption text-text-secondary">
                   {item.type} · 人均 ¥{item.price_per_person}
                 </p>
+                {item.address && (
+                  <p className="text-small text-text-tertiary mt-0.5">
+                    📍 {item.address}
+                  </p>
+                )}
               </div>
 
               {/* 评分 & 距离 */}
@@ -162,9 +168,17 @@ export function HotelRankingList({
                   {item.name}
                 </p>
                 <p className="text-caption text-text-secondary">
-                  {item.type} · ¥{item.price_per_night}/晚
+                  {item.type}
+                  {item.price_per_night > 0
+                    ? ` · ¥${item.price_per_night}/晚`
+                    : " · 价格待询"}
                   {item.feature && ` · ${item.feature}`}
                 </p>
+                {item.address && (
+                  <p className="text-small text-text-tertiary mt-0.5">
+                    📍 {item.address}
+                  </p>
+                )}
               </div>
 
               {/* 评分 & 距离 */}

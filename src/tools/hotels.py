@@ -30,6 +30,36 @@ MOCK_HOTELS = {
         {"name": "汉庭酒店(杭州东站)", "type": "经济型", "price_per_night": 180,
          "near": "杭州东站", "feature": "性价比之选，交通枢纽"},
     ],
+    "上海": [
+        {"name": "上海和平饭店", "type": "五星级", "price_per_night": 1200, "near": "外滩", "feature": "外滩江景，历史建筑"},
+        {"name": "全季酒店(南京东路)", "type": "经济型", "price_per_night": 320, "near": "南京路", "feature": "步行至外滩"},
+        {"name": "上海浦东香格里拉", "type": "五星级", "price_per_night": 1100, "near": "陆家嘴", "feature": "江景房，地铁直达"},
+    ],
+    "成都": [
+        {"name": "成都博舍", "type": "精品酒店", "price_per_night": 880, "near": "太古里", "feature": "设计师酒店，市中心"},
+        {"name": "全季酒店(春熙路)", "type": "经济型", "price_per_night": 260, "near": "春熙路", "feature": "商圈核心，交通便利"},
+        {"name": "成都富力丽思卡尔顿", "type": "五星级", "price_per_night": 950, "near": "天府广场", "feature": "奢华体验，地铁旁"},
+    ],
+    "西安": [
+        {"name": "西安索菲特传奇酒店", "type": "五星级", "price_per_night": 780, "near": "钟楼", "feature": "市中心，历史建筑"},
+        {"name": "汉庭酒店(钟楼店)", "type": "经济型", "price_per_night": 180, "near": "钟楼", "feature": "位置绝佳，性价比高"},
+        {"name": "西安W酒店", "type": "五星级", "price_per_night": 900, "near": "大雁塔", "feature": "现代设计，夜景壮观"},
+    ],
+    "南京": [
+        {"name": "南京金陵饭店", "type": "五星级", "price_per_night": 650, "near": "新街口", "feature": "老牌五星，市中心"},
+        {"name": "亚朵酒店(夫子庙)", "type": "中档型", "price_per_night": 380, "near": "夫子庙", "feature": "秦淮河畔，文化氛围"},
+        {"name": "如家精选(中山陵)", "type": "经济型", "price_per_night": 200, "near": "中山陵", "feature": "景区周边，清净舒适"},
+    ],
+    "深圳": [
+        {"name": "深圳瑞吉酒店", "type": "五星级", "price_per_night": 1000, "near": "京基100", "feature": "云端酒店，无敌城景"},
+        {"name": "汉庭酒店(海岸城)", "type": "经济型", "price_per_night": 220, "near": "海岸城", "feature": "商圈旁，交通便利"},
+        {"name": "深圳华侨城洲际", "type": "五星级", "price_per_night": 850, "near": "欢乐谷", "feature": "亲子友好，度假风格"},
+    ],
+    "重庆": [
+        {"name": "重庆解放碑威斯汀", "type": "五星级", "price_per_night": 700, "near": "解放碑", "feature": "市中心，夜景绝佳"},
+        {"name": "全季酒店(洪崖洞)", "type": "中档型", "price_per_night": 300, "near": "洪崖洞", "feature": "步行至洪崖洞"},
+        {"name": "汉庭酒店(观音桥)", "type": "经济型", "price_per_night": 160, "near": "观音桥", "feature": "商圈枢纽，性价比高"},
+    ],
 }
 
 
@@ -90,14 +120,18 @@ def search_hotels(
                     tel_str = f" | 📞{tel}" if tel else ""
                     result += (
                         f"{i}. **{name}** | {poi_type}{rating_str}\n"
-                        f"   📍{address}  📏{dist_str}{tel_str}\n\n"
+                        f"   📍{address}  📏{dist_str}{tel_str}\n"
+                        f"   💰价格请电话咨询\n\n"
                     )
                 return result
 
     # Fallback: 使用 mock 数据
     city_data = MOCK_HOTELS.get(city, [])
     if near_spot:
-        city_data = [h for h in city_data if near_spot in h.get("near", "")]
+        filtered = [h for h in city_data if near_spot in h.get("near", "")]
+        if filtered:  # 有精确匹配就用精确的
+            city_data = filtered
+        # 否则返回所有该城市酒店（不强制过滤）
 
     if budget_level in budget_ranges:
         lo, hi = budget_ranges[budget_level]

@@ -4,10 +4,11 @@
  * 自动添加 Marker + Polyline + fitBounds。
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAmap, type Spot } from "../../hooks/useAmap";
 import { useChatStore } from "../../stores/chatStore";
 import { WeatherCard } from "../../components/WeatherCard/WeatherCard";
+import { SvgRouteMap } from "./SvgRouteMap";
 
 const MAP_CONTAINER_ID = "visual-panel-map";
 
@@ -16,10 +17,38 @@ export function MapPanel() {
   const { loaded, addSpotMarker, addRoute, clearAll, fitBounds } =
     useAmap(MAP_CONTAINER_ID);
   const renderedRef = useRef("");
+  const [loadTimeout, setLoadTimeout] = useState(false);
+  const [amapFailed, setAmapFailed] = useState(false);
+
+  useEffect(() => {
+    if (loaded) {
+      setLoadTimeout(false);
+      // Amap SDK 加载成功后，3 秒后检查地图是否真正渲染了瓦片
+      const healthTimer = setTimeout(() => {
+        const container = document.getElementById(MAP_CONTAINER_ID);
+        if (container) {
+          const hasCanvas = container.querySelector("canvas");
+          const hasImage = container.querySelector("img");
+          if (!hasCanvas && !hasImage) {
+            setAmapFailed(true);
+          }
+        }
+      }, 3000);
+      return () => clearTimeout(healthTimer);
+    }
+    const timer = setTimeout(() => {
+      setLoadTimeout(true);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [loaded]);
+
+  // 决定使用哪种地图
+  const useSvgFallback = !loaded && loadTimeout || amapFailed;
+  const showAmap = loaded && !amapFailed;
 
   // 监听 geoRoutes 变化，更新地图
   useEffect(() => {
-    if (!loaded || geoRoutes.length === 0) {
+    if (!showAmap || geoRoutes.length === 0) {
       renderedRef.current = "";
       return;
     }
@@ -56,23 +85,30 @@ export function MapPanel() {
     }
 
     renderedRef.current = routeKey;
-  }, [loaded, geoRoutes, addSpotMarker, addRoute, clearAll, fitBounds]);
+  }, [showAmap, geoRoutes, addSpotMarker, addRoute, clearAll, fitBounds]);
 
-  if (!loaded) {
-    return (
-      <div className="flex-1 bg-surface-input flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 mx-auto mb-3 skeleton-shimmer rounded-full" />
-          <p className="text-caption text-text-tertiary">地图加载中...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // ========== 始终渲染地图容器（让 useAmap 能找到 DOM 元素） ==========
   return (
     <div className="flex-1 relative min-h-[200px]">
-      {/* Amap 容器 */}
-      <div id={MAP_CONTAINER_ID} className="absolute inset-0" />
+      {/* Amap 容器 — 始终在 DOM 中，仅 Amap 可用时可见 */}
+      <div
+        id={MAP_CONTAINER_ID}
+        className="absolute inset-0"
+        style={{ visibility: showAmap ? "visible" : "hidden" }}
+      />
+
+      {/* SVG 降级（Amap 不可用时） */}
+      {useSvgFallback && <SvgRouteMap geoRoutes={geoRoutes} />}
+
+      {/* 加载骨架（初始加载中） */}
+      {!loaded && !loadTimeout && (
+        <div className="absolute inset-0 bg-surface-input flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 mx-auto mb-3 skeleton-shimmer rounded-full" />
+            <p className="text-caption text-text-tertiary">地图加载中...</p>
+          </div>
+        </div>
+      )}
 
       {/* 天气浮层 */}
       {weatherData && (
@@ -83,8 +119,8 @@ export function MapPanel() {
         />
       )}
 
-      {/* 空状态 */}
-      {geoRoutes.length === 0 && (
+      {/* 空状态（Amap 可用但无数据） */}
+      {showAmap && geoRoutes.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center bg-white/80 backdrop-blur px-6 py-4 rounded-card">
             <span className="text-4xl block mb-2">🗺️</span>

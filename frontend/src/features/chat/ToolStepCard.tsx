@@ -112,3 +112,28 @@ export function ToolStepCard({ step, compact = false }: ToolStepCardProps) {
     </div>
   );
 }
+
+/** 折叠摘要：流式完成后显示一行 "已完成 N 步检索" */
+export function StepsSummary({
+  count,
+  doneCount,
+  onExpand,
+}: {
+  count: number;
+  doneCount: number;
+  onExpand: () => void;
+}) {
+  return (
+    <button
+      onClick={onExpand}
+      className="flex items-center gap-2 px-3 py-2 my-1 w-full text-left
+                 bg-surface-card border border-divider rounded-card
+                 hover:bg-surface-input transition-colors"
+    >
+      <span className="text-semantic-success font-medium text-caption">
+        ✅ 已完成 {doneCount}/{count} 步检索
+      </span>
+      <span className="text-text-tertiary text-small ml-auto">点击展开 ▸</span>
+    </button>
+  );
+}
