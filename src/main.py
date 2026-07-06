@@ -323,16 +323,41 @@ with col_tl:
         # 保存助手回复
         st.session_state.messages.append({"role": "assistant", "content": final_reply})
 
+def _step_summary(step: dict) -> str:
+    """生成推理步骤的一行摘要，折叠状态下也能快速了解全链路"""
+    action = step.get("action", "")
+    if "调用工具" in action:
+        tool = step.get("tool", "未知")
+        args = step.get("input", {})
+        key_parts = []
+        for k, v in args.items():
+            if isinstance(v, str) and len(v) < 30:
+                key_parts.append(f"{k}={v}")
+        arg_str = ", ".join(key_parts[:2]) if key_parts else ""
+        return f"🔧 {tool}({arg_str})"
+    elif "综合回复" in action:
+        thought = step.get("thought", "")
+        return f"💬 {thought[:80]}{'...' if len(thought) > 80 else ''}"
+    elif "出错" in action:
+        return f"❌ {step.get('thought', '')[:80]}"
+    return action
+
+
 with col_tr:
     st.subheader("🔍 推理过程追踪")
-    st.caption("实时展示智能助手每一步推理决策，让 AI 思考透明可见。")
+    st.caption("智能助手每一步决策透明可见，点击展开查看详情。")
 
     if st.session_state.trace:
+        # 统计摘要
+        tool_count = len([s for s in st.session_state.trace if "调用工具" in s.get("action", "")])
+        reply_count = len([s for s in st.session_state.trace if "综合回复" in s.get("action", "")])
+        st.caption(f"共 {len(st.session_state.trace)} 步 · 🔧 {tool_count} 次工具调用 · 💬 {reply_count} 次综合回复")
+
         for step in st.session_state.trace:
-            emoji = step["action"].split(" ")[0] if " " in step["action"] else "📌"
+            summary = _step_summary(step)
             with st.expander(
-                f"{emoji} 第{step['num']}步：{step['action']}",
-                expanded=(step["action"] == "🔧 调用工具")
+                f"第{step['num']}步 {summary}",
+                expanded=False  # 全部默认折叠，点击展开
             ):
                 if "调用工具" in step["action"]:
                     st.caption(f"🔨 调用的工具：**{step['tool']}**")

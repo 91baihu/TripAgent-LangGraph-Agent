@@ -16,6 +16,16 @@ interface ToolStep {
   result?: string;
 }
 
+// 🌤️ 天气数据
+export interface WeatherData {
+  city: string;
+  condition: string;
+  temperature: string;
+  humidity: string;
+  wind: string;
+  details: string;
+}
+
 // 🆕 可视化数据类型
 export interface GeoRouteData {
   spots: Array<{ name: string; lat: number; lng: number; order: number }>;
@@ -55,6 +65,15 @@ interface ChatState {
   restaurantRankings: RankingItem[][];
   hotelRankings: HotelRankingItem[][];
 
+  // 🌤️ 天气
+  weatherData: WeatherData | null;
+
+  // 💬 流式回复（增量显示）
+  streamingReply: string;
+
+  // 🔍 推理面板
+  traceExpanded: boolean;
+
   // 现有 actions
   addMessage: (role: "user" | "assistant", content: string) => void;
   setStreaming: (v: boolean) => void;
@@ -67,6 +86,16 @@ interface ChatState {
   addRestaurantRanking: (items: RankingItem[]) => void;
   addHotelRanking: (items: HotelRankingItem[]) => void;
   clearVisualData: () => void;
+
+  // 🌤️ actions
+  setWeatherData: (data: WeatherData) => void;
+
+  // 💬 流式回复 actions
+  setStreamingReply: (content: string) => void;
+  finalizeStreamingReply: () => void;
+
+  // 🔍 推理面板 actions
+  toggleTrace: () => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -76,6 +105,9 @@ export const useChatStore = create<ChatState>((set) => ({
   geoRoutes: [],
   restaurantRankings: [],
   hotelRankings: [],
+  weatherData: null,
+  streamingReply: "",
+  traceExpanded: false,
 
   addMessage: (role, content) =>
     set((state) => ({
@@ -110,6 +142,7 @@ export const useChatStore = create<ChatState>((set) => ({
       geoRoutes: [],
       restaurantRankings: [],
       hotelRankings: [],
+      weatherData: null,
     }),
 
   // 🆕 可视化数据 actions
@@ -133,5 +166,32 @@ export const useChatStore = create<ChatState>((set) => ({
       geoRoutes: [],
       restaurantRankings: [],
       hotelRankings: [],
+      weatherData: null,
     }),
+
+  // 🌤️ 天气
+  setWeatherData: (data) => set({ weatherData: data }),
+
+  // 💬 流式回复
+  setStreamingReply: (content) => set({ streamingReply: content }),
+  finalizeStreamingReply: () =>
+    set((state) => {
+      if (!state.streamingReply) return { streamingReply: "" };
+      return {
+        messages: [
+          ...state.messages,
+          {
+            id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            role: "assistant",
+            content: state.streamingReply,
+            timestamp: Date.now(),
+          },
+        ],
+        streamingReply: "",
+      };
+    }),
+
+  // 🔍 推理面板
+  toggleTrace: () =>
+    set((state) => ({ traceExpanded: !state.traceExpanded })),
 }));

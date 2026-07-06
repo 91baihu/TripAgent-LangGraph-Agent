@@ -1,19 +1,17 @@
-/** QQ 风格底部导航栏 */
+/** QQ 风格底部导航栏 — 仅移动端显示 */
 
 import { useLocation, useNavigate } from "react-router-dom";
 
 interface NavItem {
   path: string;
   label: string;
-  icon: string;       // emoji 或 SVG path
-  activeIcon?: string;
+  icon: string;
 }
 
 const navItems: NavItem[] = [
   { path: "/", label: "首页", icon: "🏠" },
   { path: "/trips", label: "行程", icon: "✈️" },
-  { path: "/favorites", label: "收藏", icon: "❤️" },
-  { path: "/profile", label: "我的", icon: "👤" },
+  { path: "/login", label: "登录", icon: "👤" },
 ];
 
 export function BottomNav() {

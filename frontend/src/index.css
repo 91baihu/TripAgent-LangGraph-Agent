@@ -88,6 +88,43 @@
   }
 }
 
+/* ===== 分屏布局辅助 ===== */
+.split-layout {
+  @apply flex flex-col md:flex-row;
+}
+
+.split-layout__chat {
+  @apply flex-1 md:border-r border-divider;
+}
+
+.split-layout__viz {
+  @apply md:w-[420px] flex-shrink-0 bg-surface-page;
+}
+
+/* 可视化面板隐藏滚动条（保持可滚动） */
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* 移动端面板滑入动画 */
+.panel-slide-in {
+  animation: panelSlideIn 0.2s ease-out;
+}
+@keyframes panelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 /* ===== 动效偏好适配 ===== */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

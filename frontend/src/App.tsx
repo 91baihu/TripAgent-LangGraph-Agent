@@ -10,9 +10,9 @@ import { ToastContainer } from "./components/Toast/ToastContainer";
 export default function App() {
   return (
     <ToastContainer>
-      <div className="flex flex-col min-h-dvh max-w-lg mx-auto relative">
-        {/* 主内容区 */}
-        <main className="flex-1 overflow-y-auto pb-14">
+      <div className="flex flex-col min-h-dvh w-full relative">
+        {/* 主内容区 — 全屏无宽度限制 */}
+        <main className="flex-1 overflow-hidden md:pb-0 pb-14">
           <Routes>
             <Route path="/" element={<ChatPage />} />
             <Route path="/trips" element={<TripListPage />} />
@@ -22,8 +22,10 @@ export default function App() {
           </Routes>
         </main>
 
-        {/* 全局底部导航 */}
-        <BottomNav />
+        {/* 底部导航 — 仅移动端显示 */}
+        <div className="md:hidden">
+          <BottomNav />
+        </div>
       </div>
     </ToastContainer>
   );
