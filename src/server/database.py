@@ -13,7 +13,20 @@ from sqlalchemy.orm import DeclarativeBase
 
 # ========== 数据库 URL 构建 ==========
 def get_database_url() -> str:
-    """从环境变量构建异步数据库 URL"""
+    """从环境变量构建异步数据库 URL
+
+    优先级: DATABASE_URL > POSTGRES_URL > 独立 POSTGRES_* 变量
+    """
+    # 直接使用完整 URL（如 Heroku/Railway 等平台）
+    database_url = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL")
+    if database_url:
+        # 确保使用 asyncpg 驱动
+        if "asyncpg" not in database_url:
+            database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
+            database_url = database_url.replace("postgres://", "postgresql+asyncpg://")
+        return database_url
+
+    # 从独立变量构建
     user = os.getenv("POSTGRES_USER", "tripagent")
     password = os.getenv("POSTGRES_PASSWORD", "tripagent_dev")
     host = os.getenv("POSTGRES_HOST", "localhost")

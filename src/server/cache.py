@@ -136,6 +136,25 @@ class CacheService:
             self._fallback[f"rate:{key}"] = {"count": 1, "start": now}
         return self._fallback[f"rate:{key}"]["count"]
 
+    # ===== 同步工具调用缓存（供 LangGraph 同步工具使用） =====
+    def get_tool_result_sync(self, tool_name: str, args: dict) -> Optional[str]:
+        """同步查询缓存的工具调用结果（仅使用内存降级）"""
+        key = self._tool_cache_key(tool_name, args)
+        import time
+        entry = self._fallback.get(key)
+        if entry and time.time() < entry.get("expires_at", 0):
+            return entry["value"]
+        return None
+
+    def set_tool_result_sync(self, tool_name: str, args: dict, result: str, ttl: int = 300):
+        """同步缓存工具调用结果（仅使用内存降级）"""
+        key = self._tool_cache_key(tool_name, args)
+        import time
+        self._fallback[key] = {
+            "value": result,
+            "expires_at": time.time() + ttl,
+        }
+
     # ===== 健康检查 =====
     async def ping(self) -> bool:
         r = await self._get_redis()

@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+
+# Env (use config/*.env)
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude
+.claude/

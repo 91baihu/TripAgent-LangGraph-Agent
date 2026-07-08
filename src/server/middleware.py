@@ -86,7 +86,7 @@ class AccessLogMiddleware:
 
 # ========== LLM 熔断器 ==========
 class CircuitBreaker:
-    """LLM API 调用熔断器
+    """LLM API 调用熔断器 — 支持同步和异步调用
 
     状态机: CLOSED → (连续失败5次) → OPEN → (等待30s) → HALF_OPEN → (成功) → CLOSED
     """
@@ -102,24 +102,51 @@ class CircuitBreaker:
     def state(self) -> str:
         return self._state
 
-    def call(self, coro):
-        """包装异步调用，自动熔断
+    @property
+    def is_open(self) -> bool:
+        return self._state == "OPEN"
 
-        Usage:
-            result = await circuit_breaker.call(llm.ainvoke(messages))
-        """
+    def _check_state(self):
+        """检查熔断状态，必要时切换"""
         if self._state == "OPEN":
             if time.time() - self._last_failure_time > self.recovery_timeout:
                 self._state = "HALF_OPEN"
             else:
+                remaining = self.recovery_timeout - (time.time() - self._last_failure_time)
                 raise CircuitBreakerOpenError(
-                    f"LLM 服务熔断中，{self.recovery_timeout - (time.time() - self._last_failure_time):.0f}s 后重试"
+                    f"LLM 服务熔断中，{remaining:.0f}s 后重试"
                 )
 
+    def execute(self, fn, *args, **kwargs):
+        """包装同步调用，自动熔断
+
+        Usage:
+            result = circuit_breaker.execute(llm.invoke, messages)
+        """
+        self._check_state()
         try:
-            result = coro()
+            result = fn(*args, **kwargs)
             self._on_success()
             return result
+        except CircuitBreakerOpenError:
+            raise
+        except Exception:
+            self._on_failure()
+            raise
+
+    async def execute_async(self, coro):
+        """包装异步调用，自动熔断
+
+        Usage:
+            result = await circuit_breaker.execute_async(llm.ainvoke(messages))
+        """
+        self._check_state()
+        try:
+            result = await coro
+            self._on_success()
+            return result
+        except CircuitBreakerOpenError:
+            raise
         except Exception:
             self._on_failure()
             raise
@@ -133,6 +160,11 @@ class CircuitBreaker:
         self._last_failure_time = time.time()
         if self._failure_count >= self.failure_threshold:
             self._state = "OPEN"
+
+    def reset(self):
+        """手动重置熔断器"""
+        self._failure_count = 0
+        self._state = "CLOSED"
 
 
 class CircuitBreakerOpenError(Exception):
@@ -196,6 +228,68 @@ class TokenBucketRateLimiter:
         bucket = self._buckets.get(key)
         return bucket["tokens"] if bucket else 0
 
+    # ===== FastAPI 依赖注入 =====
+    async def check_rate_limit(
+        self,
+        max_requests: int = 30,
+        window_seconds: float = 60.0,
+        key_prefix: str = "ip",
+    ):
+        """FastAPI 依赖：按 IP 限流
+
+        Usage:
+            @router.post("/chat/stream")
+            async def chat_stream(
+                request: ChatRequest,
+                req: Request,
+                _: None = Depends(rate_limiter.check_rate_limit),
+            ):
+        """
+        from fastapi import Request
+
+        # 这里需要 Request 对象，但 FastAPI Depends 无法直接获取
+        # 使用闭包方式在路由中使用
+        pass
+
 
 # 全局限流器
 rate_limiter = TokenBucketRateLimiter()
+
+
+# ===== 限流 FastAPI 依赖工厂 =====
+class RateLimitGuard:
+    """限流守卫 — FastAPI 依赖注入
+
+    Usage:
+        rate_guard = RateLimitGuard(max_requests=30, window_seconds=60.0)
+
+        @router.post("/chat/stream")
+        async def chat_stream(req: Request, _: None = Depends(rate_guard)):
+            ...
+    """
+
+    def __init__(self, max_requests: int = 30, window_seconds: float = 60.0):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self._limiter = rate_limiter
+
+    async def __call__(self, request: Request) -> None:
+        from fastapi import HTTPException
+
+        # 优先使用用户 ID，否则使用 IP
+        client_ip = request.client.host if request.client else "unknown"
+        user_id = getattr(request.state, "user_id", None)
+        key = user_id or client_ip
+
+        allowed = await self._limiter.is_allowed(
+            key=f"rate:{key}",
+            max_tokens=self.max_requests,
+            refill_seconds=self.window_seconds,
+        )
+
+        if not allowed:
+            raise HTTPException(
+                status_code=429,
+                detail="请求过于频繁，请稍后再试",
+                headers={"Retry-After": str(int(self.window_seconds))},
+            )

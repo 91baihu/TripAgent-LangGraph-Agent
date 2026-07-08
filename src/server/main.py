@@ -18,7 +18,18 @@ from .logging import logger
 async def lifespan(app: FastAPI):
     """启动/关闭钩子"""
     logger.info(f"tripagent_starting env={os.getenv('APP_ENV', 'dev')}")
+
+    # 初始化数据库表（先导入 models 确保所有表注册到 Base.metadata）
+    try:
+        from . import models  # noqa: F401  # 确保 ORM 模型已注册
+        from .database import init_db
+        await init_db()
+        logger.info("database_initialized")
+    except Exception as e:
+        logger.error(f"database_init_failed error={e}")
+
     yield
+
     logger.info("tripagent_shutting_down")
     try:
         from .database import close_db

@@ -3,7 +3,7 @@
 import json
 import uuid
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 
 # SSE 可选依赖
@@ -16,8 +16,12 @@ except ImportError:
 
 from ..schemas.chat import ChatRequest, ChatReply, ErrorResponse
 from ..services.agent_service import agent_service, AgentEvent
+from ..middleware import RateLimitGuard
 
 router = APIRouter()
+
+# 限流守卫: 每 IP 每分钟最多 30 次请求
+chat_rate_guard = RateLimitGuard(max_requests=30, window_seconds=60.0)
 
 
 async def sse_event_generator(messages: list, travel_plan: dict, request_id: str):
@@ -31,7 +35,11 @@ async def sse_event_generator(messages: list, travel_plan: dict, request_id: str
 
 
 @router.post("/chat/stream", response_model=None)
-async def chat_stream(request: ChatRequest, req: Request):
+async def chat_stream(
+    request: ChatRequest,
+    req: Request,
+    _: None = Depends(chat_rate_guard),
+):
     """流式对话（SSE）— Agent 逐步返回推理过程
 
     事件类型：
@@ -65,7 +73,11 @@ async def chat_stream(request: ChatRequest, req: Request):
 
 
 @router.post("/chat", response_model=ChatReply)
-async def chat_sync(request: ChatRequest, req: Request):
+async def chat_sync(
+    request: ChatRequest,
+    req: Request,
+    _: None = Depends(chat_rate_guard),
+):
     """同步对话 — 等待 Agent 完整推理后返回"""
     request_id = getattr(req.state, "request_id", str(uuid.uuid4())[:8])
 

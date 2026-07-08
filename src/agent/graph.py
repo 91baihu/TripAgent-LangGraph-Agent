@@ -20,6 +20,7 @@ try:
     from ..tools.restaurants import search_restaurants
     from ..tools.hotels import search_hotels
     from ..server.token_tracker import token_tracker
+    from ..server.middleware import llm_circuit_breaker, CircuitBreakerOpenError
 except ImportError:
     from tools.attractions import search_attractions
     from tools.weather import get_weather
@@ -35,6 +36,16 @@ except ImportError:
             def record_call(self, **kwargs):
                 return None
         token_tracker = _NoOpTracker()
+    # 熔断器可能不在路径中
+    try:
+        from server.middleware import llm_circuit_breaker, CircuitBreakerOpenError
+    except ImportError:
+        # 创建空代理
+        class _NoOpBreaker:
+            def execute(self, fn, *args, **kwargs):
+                return fn(*args, **kwargs)
+        llm_circuit_breaker = _NoOpBreaker()
+        CircuitBreakerOpenError = Exception
 
 load_dotenv()
 
@@ -73,7 +84,13 @@ def create_agent():
 
         start_time = time.time()
         try:
-            response = llm_with_tools.invoke(messages)
+            # 通过熔断器调用 LLM（自动熔断保护）
+            response = llm_circuit_breaker.execute(llm_with_tools.invoke, messages)
+        except CircuitBreakerOpenError as e:
+            response = AIMessage(
+                content=f"抱歉，AI 服务暂时繁忙（熔断保护已触发）：{str(e)[:200]}\n\n"
+                        f"请稍后重试或联系管理员"
+            )
         except Exception as e:
             # LLM 调用失败时返回友好提示
             response = AIMessage(

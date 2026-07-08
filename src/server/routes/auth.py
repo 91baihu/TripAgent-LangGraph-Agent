@@ -1,7 +1,13 @@
-"""认证路由 — 注册/登录/刷新令牌"""
+"""认证路由 — 注册/登录/刷新令牌 (PostgreSQL)"""
+
+from __future__ import annotations
+
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth import (
     hash_password,
@@ -12,6 +18,8 @@ from ..auth import (
     get_current_user,
     bearer_scheme,
 )
+from ..database import get_db
+from ..models import User
 
 router = APIRouter(prefix="/auth", tags=["认证"])
 
@@ -39,33 +47,44 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
-# ========== 临时用户存储（后续替换为 PostgreSQL） ==========
-_users_db: dict = {}  # email -> {id, email, password_hash, nickname, role, ...}
+# ========== 辅助函数 ==========
+async def _get_user_by_email(db: AsyncSession, email: str) -> User | None:
+    """通过邮箱查询用户"""
+    result = await db.execute(select(User).where(User.email == email))
+    return result.scalar_one_or_none()
+
+
+async def _get_user_by_id(db: AsyncSession, user_id: str) -> User | None:
+    """通过 ID 查询用户"""
+    result = await db.execute(select(User).where(User.id == user_id))
+    return result.scalar_one_or_none()
 
 
 # ========== 路由 ==========
 @router.post("/register", status_code=201)
-async def register(req: RegisterRequest):
+async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     """用户注册"""
-    import uuid
-
-    if req.email in _users_db:
+    # 检查邮箱是否已注册
+    existing = await _get_user_by_email(db, req.email)
+    if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="该邮箱已被注册",
         )
 
-    user_id = str(uuid.uuid4())
-    _users_db[req.email] = {
-        "id": user_id,
-        "email": req.email,
-        "password_hash": hash_password(req.password),
-        "nickname": req.nickname or req.email.split("@")[0],
-        "role": "free",
-    }
+    user = User(
+        id=str(uuid.uuid4()),
+        email=req.email,
+        nickname=req.nickname or req.email.split("@")[0],
+        password_hash=hash_password(req.password),
+        role="free",
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
 
-    access_token = create_access_token(user_id, "free")
-    refresh_token = create_refresh_token(user_id)
+    access_token = create_access_token(user.id, user.role)
+    refresh_token = create_refresh_token(user.id)
 
     return TokenResponse(
         access_token=access_token,
@@ -75,23 +94,23 @@ async def register(req: RegisterRequest):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(req: LoginRequest):
+async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     """用户登录"""
-    user = _users_db.get(req.email)
+    user = await _get_user_by_email(db, req.email)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="邮箱或密码错误",
         )
 
-    if not verify_password(req.password, user["password_hash"]):
+    if not verify_password(req.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="邮箱或密码错误",
         )
 
-    access_token = create_access_token(user["id"], user["role"])
-    refresh_token = create_refresh_token(user["id"])
+    access_token = create_access_token(user.id, user.role)
+    refresh_token = create_refresh_token(user.id)
 
     return TokenResponse(
         access_token=access_token,
@@ -101,7 +120,7 @@ async def login(req: LoginRequest):
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh_token(req: RefreshRequest):
+async def refresh_token(req: RefreshRequest, db: AsyncSession = Depends(get_db)):
     """刷新访问令牌"""
     payload = verify_token(req.refresh_token)
 
@@ -112,14 +131,16 @@ async def refresh_token(req: RefreshRequest):
         )
 
     user_id = payload["sub"]
-    # 查找用户角色
-    role = "free"
-    for user in _users_db.values():
-        if user["id"] == user_id:
-            role = user["role"]
-            break
 
-    new_access = create_access_token(user_id, role)
+    # 确认用户仍存在
+    user = await _get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="用户不存在",
+        )
+
+    new_access = create_access_token(user_id, user.role)
     new_refresh = create_refresh_token(user_id)
 
     return TokenResponse(
@@ -130,15 +151,18 @@ async def refresh_token(req: RefreshRequest):
 
 
 @router.get("/me")
-async def get_me(user: dict = Depends(get_current_user)):
+async def get_me(
+    user_payload: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     """获取当前用户信息"""
-    user_id = user["sub"]
-    for u in _users_db.values():
-        if u["id"] == user_id:
-            return {
-                "id": u["id"],
-                "email": u["email"],
-                "nickname": u["nickname"],
-                "role": u["role"],
-            }
-    raise HTTPException(status_code=404, detail="用户不存在")
+    user = await _get_user_by_id(db, user_payload["sub"])
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+
+    return {
+        "id": user.id,
+        "email": user.email,
+        "nickname": user.nickname,
+        "role": user.role,
+    }
