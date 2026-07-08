@@ -6,27 +6,52 @@ import { MapView } from "./features/map/MapView";
 import { LoginPage } from "./features/auth/LoginPage";
 import { BottomNav } from "./components/BottomNav/BottomNav";
 import { ToastContainer } from "./components/Toast/ToastContainer";
+import { ErrorBoundary } from "./components/ErrorBoundary/ErrorBoundary";
+import { ProtectedRoute } from "./components/ProtectedRoute/ProtectedRoute";
 
 export default function App() {
   return (
-    <ToastContainer>
-      <div className="flex flex-col min-h-dvh w-full relative">
-        {/* 主内容区 — 全屏无宽度限制 */}
-        <main className="flex-1 overflow-hidden md:pb-0 pb-14">
-          <Routes>
-            <Route path="/" element={<ChatPage />} />
-            <Route path="/trips" element={<TripListPage />} />
-            <Route path="/trips/:id" element={<TripDetailPage />} />
-            <Route path="/trips/:id/map" element={<MapView />} />
-            <Route path="/login" element={<LoginPage />} />
-          </Routes>
-        </main>
+    <ErrorBoundary>
+      <ToastContainer>
+        <div className="flex flex-col min-h-dvh w-full relative">
+          {/* 主内容区 — 全屏无宽度限制 */}
+          <main className="flex-1 overflow-hidden md:pb-0 pb-14">
+            <Routes>
+              <Route path="/" element={<ChatPage />} />
+              <Route
+                path="/trips"
+                element={
+                  <ProtectedRoute>
+                    <TripListPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/trips/:id"
+                element={
+                  <ProtectedRoute>
+                    <TripDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/trips/:id/map"
+                element={
+                  <ProtectedRoute>
+                    <MapView />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/login" element={<LoginPage />} />
+            </Routes>
+          </main>
 
-        {/* 底部导航 — 仅移动端显示 */}
-        <div className="md:hidden">
-          <BottomNav />
+          {/* 底部导航 — 仅移动端显示 */}
+          <div className="md:hidden">
+            <BottomNav />
+          </div>
         </div>
-      </div>
-    </ToastContainer>
+      </ToastContainer>
+    </ErrorBoundary>
   );
 }
