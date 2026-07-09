@@ -1,4 +1,4 @@
-/* TripAgent QQ 极简风格全局样式 */
+/* TripAgent 全局样式 — QQ 极简 + Demo V3 暖色调增强 */
 
 @tailwind base;
 @tailwind components;
@@ -14,17 +14,21 @@
     @apply bg-surface-page text-text-primary font-sans;
     margin: 0;
     min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* 滚动条 */
+  /* 滚动条 — Demo V3 极细风格 */
   ::-webkit-scrollbar {
-    width: 4px;
+    width: 3px;
+    height: 3px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-text-tertiary rounded-full;
+    background: #D5CFC6;
+    border-radius: 100px;
   }
 }
 
@@ -34,22 +38,29 @@
   .skeleton-shimmer {
     background: linear-gradient(
       90deg,
-      #F0F1F3 25%,
-      #E8E9EB 50%,
-      #F0F1F3 75%
+      #F0EAE0 25%,
+      #E8E0D5 50%,
+      #F0EAE0 75%
     );
     background-size: 200% 100%;
-    animation: shimmer 1.5s ease-in-out infinite;
+    animation: shimmer 1.6s ease-in-out infinite;
   }
 
   /* 气泡弹出 */
   .bubble-enter {
-    animation: bubbleIn 0.2s ease-out;
+    animation: bubbleIn 0.3s cubic-bezier(0.4,0,0.2,1) both;
   }
 
   /* 卡片浮现 */
   .card-enter {
     animation: cardFadeIn 0.25s ease-out;
+  }
+
+  /* 🆕 玻璃拟态容器 */
+  .glass-surface {
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
 }
 
@@ -62,11 +73,11 @@
 @keyframes bubbleIn {
   from {
     opacity: 0;
-    transform: scale(0.9);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateY(0);
   }
 }
 
@@ -86,6 +97,24 @@
     transform: scale(4);
     opacity: 0;
   }
+}
+
+/* 🆕 Demo V3 呼吸动画 */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+/* 🆕 思考圆点弹跳 */
+@keyframes dotBounce {
+  0%, 80%, 100% { transform: scale(0.3); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* 🆕 脉冲光环 */
+@keyframes pulseRing {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(13,148,136,0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(13,148,136,0); }
 }
 
 /* ===== 分屏布局辅助 ===== */

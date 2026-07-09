@@ -26,11 +26,27 @@ export function ReasoningTrace() {
     <div className="flex flex-col h-full">
       {/* 统计摘要 */}
       <div className="flex-shrink-0 px-4 py-3 border-b border-divider">
-        <h3 className="text-h3 text-text-primary">🔍 推理过程追踪</h3>
-        <p className="text-caption text-text-tertiary mt-1">
-          共 {toolSteps.length} 步 ·{" "}
-          {toolSteps.filter((s) => s.result).length} 步已完成
-        </p>
+        <h3 className="text-h3 text-text-primary mb-2">🔍 推理过程追踪</h3>
+        <div className="flex items-center gap-4 px-3 py-2.5 bg-sand rounded-xl">
+          <div className="text-center flex-1">
+            <div className="text-xl font-extrabold text-ink">{toolSteps.length}</div>
+            <div className="text-[0.65rem] text-ink-tertiary">总步骤</div>
+          </div>
+          <div className="w-px h-8 bg-warm-border" />
+          <div className="text-center flex-1">
+            <div className="text-xl font-extrabold text-teal">
+              {toolSteps.filter((s) => s.result).length}
+            </div>
+            <div className="text-[0.65rem] text-ink-tertiary">已完成</div>
+          </div>
+          <div className="w-px h-8 bg-warm-border" />
+          <div className="text-center flex-1">
+            <div className="text-xl font-extrabold text-ink">
+              {toolSteps.length - toolSteps.filter((s) => s.result).length}
+            </div>
+            <div className="text-[0.65rem] text-ink-tertiary">进行中</div>
+          </div>
+        </div>
       </div>
 
       {/* 步骤列表 */}

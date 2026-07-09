@@ -36,15 +36,15 @@ export interface HotelItem {
 }
 
 const RANK_COLORS: Record<number, string> = {
-  1: "bg-[#FFF7E6] border-amber-300",    // 🥇 暖金
-  2: "bg-surface-input border-divider",   // 🥈 银灰
-  3: "bg-[#FFF0E0] border-orange-200",    // 🥉 铜色
+  1: "bg-[#FFF7E6] border-amber-300/60",    // 🥇 暖金
+  2: "bg-[#F8FAFC] border-slate-200/60",     // 🥈 银灰
+  3: "bg-[#FFF0E0] border-orange-200/60",    // 🥉 铜色
 };
 
-const RANK_BADGE_COLORS: Record<number, string> = {
-  1: "bg-yellow-500 text-white",   // 🥇
-  2: "bg-gray-400 text-white",     // 🥈
-  3: "bg-amber-600 text-white",    // 🥉
+const RANK_BADGE_STYLES: Record<number, { background: string; color: string }> = {
+  1: { background: "linear-gradient(135deg, #FEF3C7, #FDE68A)", color: "#92400E" },
+  2: { background: "linear-gradient(135deg, #F1F5F9, #E2E8F0)", color: "#475569" },
+  3: { background: "linear-gradient(135deg, #FEF2F2, #FECACA)", color: "#991B1B" },
 };
 
 const RANK_EMOJI: Record<number, string> = {
@@ -61,15 +61,25 @@ function formatDistance(meters: number): string {
 }
 
 function RankBadge({ rank }: { rank: number }) {
-  const badgeClass =
-    RANK_BADGE_COLORS[rank] || "bg-primary text-text-inverse";
+  const badgeStyle = RANK_BADGE_STYLES[rank];
+
+  if (badgeStyle) {
+    return (
+      <span
+        className="w-8 h-8 rounded-full flex items-center justify-center text-small font-extrabold flex-shrink-0"
+        style={{
+          background: badgeStyle.background,
+          color: badgeStyle.color,
+        }}
+      >
+        {rank}
+      </span>
+    );
+  }
 
   return (
     <span
-      className={`
-        w-8 h-8 rounded-full flex items-center justify-center
-        text-small font-bold flex-shrink-0 ${badgeClass}
-      `}
+      className="w-8 h-8 rounded-full flex items-center justify-center text-small font-bold flex-shrink-0 bg-ink text-white"
     >
       {rank}
     </span>
@@ -99,9 +109,7 @@ export function RankingList({
           <Card key={item.rank} padding className={`border ${bgClass}`}>
             <div className="flex items-center gap-3">
               {/* 排名徽章 */}
-              <span className="text-lg flex-shrink-0">
-                {RANK_EMOJI[item.rank] || `#${item.rank}`}
-              </span>
+              <RankBadge rank={item.rank} />
 
               {/* 餐厅信息 */}
               <div className="flex-1 min-w-0">
@@ -158,9 +166,7 @@ export function HotelRankingList({
           <Card key={item.rank} padding className={`border ${bgClass}`}>
             <div className="flex items-center gap-3">
               {/* 排名徽章 */}
-              <span className="text-lg flex-shrink-0">
-                {RANK_EMOJI[item.rank] || `#${item.rank}`}
-              </span>
+              <RankBadge rank={item.rank} />
 
               {/* 酒店信息 */}
               <div className="flex-1 min-w-0">

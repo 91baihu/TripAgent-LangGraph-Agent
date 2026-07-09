@@ -6,7 +6,6 @@
 
 import { useState } from "react";
 import { useChatStore } from "../../stores/chatStore";
-import { Tag } from "../../components/Tag/Tag";
 import { MapPanel } from "./MapPanel";
 import { RankingsPanel } from "./RankingsPanel";
 import { ReasoningTrace } from "./ReasoningTrace";
@@ -67,18 +66,27 @@ export function VisualizationPanel({
                 : tab.key === "rankings"
                   ? rankingCount
                   : traceCount;
+            const isActive = activeTab === tab.key;
             return (
-              <Tag
+              <button
                 key={tab.key}
-                variant="primary"
-                active={activeTab === tab.key}
                 onClick={() => setActiveTab(tab.key)}
+                className={`
+                  relative flex items-center gap-1 px-3 h-8 text-caption font-semibold
+                  transition-all duration-200 rounded-none bg-transparent border-0 cursor-pointer
+                  ${isActive ? "text-ink" : "text-ink-tertiary hover:text-ink-secondary"}
+                `}
               >
                 {tab.icon} {tab.label}
                 {count > 0 && (
-                  <span className="ml-1 text-small opacity-70">({count})</span>
+                  <span className="ml-1 px-1.5 py-px text-[0.62rem] font-semibold rounded-full bg-sand-dark text-ink-secondary">
+                    {count}
+                  </span>
                 )}
-              </Tag>
+                {isActive && (
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-[3px] rounded-sm bg-ink" />
+                )}
+              </button>
             );
           })}
         </div>

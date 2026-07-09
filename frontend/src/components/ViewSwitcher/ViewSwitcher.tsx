@@ -37,7 +37,7 @@ export function ViewSwitcher({ active, onChange, className = "" }: ViewSwitcherP
           className={`
             flex-1 flex flex-col items-center gap-0.5 py-2
             transition-colors duration-150
-            ${active === view.key ? "text-primary" : "text-text-tertiary"}
+            ${active === view.key ? "text-text-primary" : "text-text-tertiary"}
           `}
         >
           <span className="text-lg leading-none">{view.icon}</span>

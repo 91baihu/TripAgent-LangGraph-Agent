@@ -55,7 +55,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className="pointer-events-auto animate-bubbleIn"
+            className="pointer-events-auto animate-fade-up"
           >
             <ToastItem message={toast.message} type={toast.type} />
           </div>
@@ -66,13 +66,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 }
 
 // ===== Toast Item =====
-const typeStyles: Record<ToastType, string> = {
-  success: "bg-semantic-success text-white",
-  error: "bg-semantic-error text-white",
-  warning: "bg-semantic-warning text-white",
-  info: "bg-text-primary text-white",
-};
-
 const typeIcons: Record<ToastType, string> = {
   success: "✓",
   error: "✕",
@@ -82,14 +75,8 @@ const typeIcons: Record<ToastType, string> = {
 
 function ToastItem({ message, type }: { message: string; type: ToastType }) {
   return (
-    <div
-      className={`
-        flex items-center gap-2 px-4 h-[44px] rounded-button shadow-modal
-        text-body font-medium min-w-[120px] max-w-[320px]
-        ${typeStyles[type]}
-      `}
-    >
-      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-small font-bold">
+    <div className="flex items-center gap-2.5 bg-ink text-white rounded-full px-5 py-2.5 shadow-warm-md text-body font-medium max-w-[320px]">
+      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-white/15 flex items-center justify-center text-small font-bold">
         {typeIcons[type]}
       </span>
       <span className="truncate">{message}</span>

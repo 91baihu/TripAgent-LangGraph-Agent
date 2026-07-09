@@ -157,15 +157,15 @@ function Avatar({ role }: { role: BubbleRole }) {
   return (
     <div
       className={`
-        w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0
-        text-small font-bold
+        w-[34px] h-[34px] rounded-full flex items-center justify-center flex-shrink-0
+        text-xs font-bold select-none
         ${isUser
-          ? "bg-primary text-white"
-          : "bg-gradient-to-br from-primary to-primary-hover text-white"
+          ? "bg-text-primary text-white"
+          : "bg-sand-dark text-text-primary"
         }
       `}
     >
-      {isUser ? "我" : "✈️"}
+      {isUser ? "我" : "AI"}
     </div>
   );
 }
@@ -176,17 +176,18 @@ export function Bubble({ role, children, className = "" }: BubbleProps) {
   return (
     <div
       className={`
-        flex items-start gap-2 mb-3 bubble-enter
+        flex items-start gap-2.5 mb-4 bubble-enter
         ${isUser ? "flex-row-reverse" : "flex-row"}
+        max-w-[88%] ${isUser ? "ml-auto" : "mr-auto"}
       `}
     >
       <Avatar role={role} />
       <div
         className={`
-          max-w-[75%] px-4 py-3 text-body leading-relaxed
+          px-3.5 py-2.5 text-body leading-relaxed
           ${isUser
-            ? "bg-primary text-text-inverse rounded-bubble rounded-tr-md"
-            : "bg-surface-card text-text-primary rounded-bubble rounded-tl-md border border-divider"
+            ? "bg-text-primary text-white rounded-bubble rounded-br-sm"
+            : "bg-surface-card text-text-primary rounded-bubble rounded-bl-sm border border-warm-border"
           }
           ${className}
         `}
@@ -200,17 +201,17 @@ export function Bubble({ role, children, className = "" }: BubbleProps) {
 /** 思考中骨架气泡 */
 export function ThinkingBubble() {
   return (
-    <div className="flex items-start gap-2 mb-3">
+    <div className="flex items-start gap-2.5 mb-4">
       <Avatar role="assistant" />
-      <div className="bg-surface-card border border-divider rounded-bubble rounded-tl-md px-5 py-4">
+      <div className="bg-surface-card border border-warm-border rounded-bubble rounded-bl-sm px-4 py-3">
         <div className="flex gap-1.5">
           {[0, 1, 2].map((i) => (
             <span
               key={i}
-              className="w-2 h-2 rounded-full bg-primary animate-bounce"
+              className="w-1.5 h-1.5 rounded-full bg-ink-tertiary"
               style={{
-                animationDelay: `${i * 0.15}s`,
-                animationDuration: "0.8s",
+                animation: "dotBounce 1.3s ease-in-out infinite",
+                animationDelay: `${i * 0.16}s`,
               }}
             />
           ))}

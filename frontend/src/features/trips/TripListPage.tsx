@@ -19,6 +19,34 @@ interface Trip {
   created_at: string;
 }
 
+/** 城市名 → emoji 映射 */
+const cityEmoji: Record<string, string> = {
+  北京: "🏯",
+  上海: "🌃",
+  广州: "🌆",
+  深圳: "🏙️",
+  杭州: "🛶",
+  成都: "🐼",
+  西安: "🏛️",
+  重庆: "🌉",
+  南京: "🏯",
+  武汉: "🌉",
+  长沙: "🏙️",
+  厦门: "🏖️",
+  三亚: "🌴",
+  大理: "🏔️",
+  丽江: "🏘️",
+  桂林: "⛰️",
+  苏州: "🌿",
+  青岛: "🍺",
+  大连: "🌊",
+  哈尔滨: "❄️",
+};
+
+function getCityEmoji(city: string): string {
+  return cityEmoji[city] || "🏙️";
+}
+
 export function TripListPage() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +63,9 @@ export function TripListPage() {
   if (loading) {
     return (
       <div className="p-4 space-y-3">
-        <h1 className="text-h2 text-text-primary mb-4">我的行程</h1>
+        <h1 className="font-serif font-black text-2xl text-text-primary mb-4">
+          我的行程
+        </h1>
         {[1, 2, 3].map((i) => (
           <TripCardSkeleton key={i} />
         ))}
@@ -45,7 +75,9 @@ export function TripListPage() {
 
   return (
     <div className="p-4">
-      <h1 className="text-h2 text-text-primary mb-4">我的行程</h1>
+      <h1 className="font-serif font-black text-2xl text-text-primary mb-4">
+        我的行程
+      </h1>
 
       {trips.length === 0 ? (
         <EmptyState
@@ -57,63 +89,116 @@ export function TripListPage() {
         />
       ) : (
         <div className="space-y-3">
-          {trips.map((trip) => (
-            <Card
-              key={trip.id}
-              hover
-              padding
-              onClick={() => navigate(`/trips/${trip.id}`)}
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h3 className="text-h3 text-text-primary">
-                    🏙️ {trip.title}
-                  </h3>
-                  <p className="text-caption text-text-secondary mt-1">
-                    {trip.city} · {trip.days}天
-                  </p>
-                </div>
-                <Tag
-                  variant={
-                    trip.status === "confirmed" ? "success" : "default"
-                  }
-                  active={trip.status === "confirmed"}
-                >
-                  {trip.status === "draft" ? "草稿" : "已确认"}
-                </Tag>
-              </div>
+          {trips.map((trip, i) => {
+            const allSpots = trip.itinerary_json
+              ? Object.values(trip.itinerary_json).flat()
+              : [];
+            const spotCount = allSpots.length;
 
-              {/* 景点预览 */}
-              {trip.itinerary_json &&
-                Object.values(trip.itinerary_json).length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {Object.values(trip.itinerary_json)
-                      .flat()
-                      .slice(0, 4)
-                      .map((spot: unknown, i: number) => (
+            return (
+              <div
+                key={trip.id}
+                className="animate-fade-up"
+                style={{ animationDelay: `${i * 80}ms` }}
+              >
+                <Card
+                  hover
+                  padding={false}
+                  className="overflow-hidden"
+                  onClick={() => navigate(`/trips/${trip.id}`)}
+                >
+                {/* Hero 渐变区域 */}
+                <div
+                  className="
+                    relative h-[110px] overflow-hidden
+                    bg-gradient-to-br from-sand-dark to-sand-bg
+                    flex items-center justify-center
+                  "
+                  style={{ opacity: 0.7 }}
+                >
+                  <span className="text-[2.8rem] leading-none select-none">
+                    {getCityEmoji(trip.city)}
+                  </span>
+
+                  {/* 状态标签 — 绝对定位右上角 */}
+                  <div className="absolute top-2.5 right-2.5">
+                    <Tag
+                      variant={
+                        trip.status === "confirmed" ? "success" : "outline"
+                      }
+                      active={trip.status === "confirmed"}
+                    >
+                      {trip.status === "draft" ? "草稿" : "已确认"}
+                    </Tag>
+                  </div>
+                </div>
+
+                {/* 卡片主体 */}
+                <div className="p-[14px]">
+                  <h3 className="text-[1.05rem] font-bold text-text-primary mb-0.5">
+                    {trip.title}
+                  </h3>
+
+                  {/* 统计行：天数 / 景点数 / 创建日期 */}
+                  <div className="flex gap-4 my-2">
+                    <div className="text-center">
+                      <div className="text-[1.1rem] font-bold text-text-primary">
+                        {trip.days}
+                      </div>
+                      <div className="text-[0.62rem] text-ink-tertiary uppercase tracking-wider">
+                        天数
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-[1.1rem] font-bold text-text-primary">
+                        {spotCount}
+                      </div>
+                      <div className="text-[0.62rem] text-ink-tertiary uppercase tracking-wider">
+                        景点
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-[1.1rem] font-bold text-text-primary">
+                        {new Date(trip.created_at)
+                          .getMonth() + 1}/{new Date(
+                            trip.created_at,
+                          ).getDate()}
+                      </div>
+                      <div className="text-[0.62rem] text-ink-tertiary uppercase tracking-wider">
+                        日期
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 景点标签行 */}
+                  {allSpots.length > 0 && (
+                    <div className="flex flex-wrap gap-[5px] mt-2">
+                      {allSpots.slice(0, 4).map((spot: unknown, j: number) => (
                         <span
-                          key={i}
-                          className="text-small text-text-secondary bg-surface-input px-2 py-0.5 rounded-tag"
+                          key={j}
+                          className="
+                            px-[9px] py-[3px] rounded-[5px]
+                            text-[0.7rem] font-medium
+                            bg-sand text-ink-secondary
+                          "
                         >
                           {typeof spot === "object" && spot !== null
-                            ? (spot as Record<string, unknown>).name as string || `景点${i + 1}`
-                            : `景点${i + 1}`}
+                            ? (spot as Record<string, unknown>).name as string || `景点${j + 1}`
+                            : `景点${j + 1}`}
                         </span>
                       ))}
-                    {Object.values(trip.itinerary_json).flat().length > 4 && (
-                      <span className="text-small text-text-tertiary">
-                        +{Object.values(trip.itinerary_json).flat().length - 4}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-              {/* 底部时间 */}
-              <p className="text-small text-text-tertiary mt-3">
-                {new Date(trip.created_at).toLocaleDateString("zh-CN")}
-              </p>
-            </Card>
-          ))}
+                      {allSpots.length > 4 && (
+                        <span className="text-[0.7rem] text-ink-tertiary self-center">
+                          +{allSpots.length - 4}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </Card>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

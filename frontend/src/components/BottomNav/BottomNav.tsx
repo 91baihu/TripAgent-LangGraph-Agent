@@ -27,7 +27,7 @@ export function BottomNav() {
     <nav
       className="
         fixed bottom-0 left-0 right-0 z-50
-        h-14 bg-surface-card border-t border-divider
+        h-14 bg-white/85 backdrop-blur border-t border-warm-border2
         flex items-center justify-around
         safe-area-inset-bottom
       "
@@ -42,10 +42,10 @@ export function BottomNav() {
             className={`
               flex flex-col items-center justify-center gap-0.5
               min-w-[64px] h-full transition-colors duration-150
-              ${active ? "text-primary" : "text-text-tertiary"}
+              ${active ? "text-ink" : "text-ink-tertiary"}
             `}
           >
-            <span className="text-xl leading-none">{item.icon}</span>
+            <span className={`text-xl leading-none ${active ? "font-bold" : ""}`}>{item.icon}</span>
             <span className="text-small leading-none">{item.label}</span>
           </button>
         );

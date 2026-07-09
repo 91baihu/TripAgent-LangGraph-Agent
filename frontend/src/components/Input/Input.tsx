@@ -20,11 +20,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         <div
           className={`
             flex items-center gap-2 h-[44px] px-4
-            bg-surface-input rounded-input border
-            transition-colors duration-150
+            bg-sand rounded-input border-[1.5px]
+            transition-colors duration-200
             ${error
               ? "border-semantic-error"
-              : "border-transparent focus-within:border-primary focus-within:bg-surface-card"
+              : "border-warm-border focus-within:border-ink focus-within:bg-white"
             }
           `}
         >

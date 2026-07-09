@@ -69,11 +69,11 @@ export function SvgRouteMap({ geoRoutes }: SvgRouteMapProps) {
 
   if (spots.length === 0) {
     return (
-      <div className="flex-1 bg-surface-input flex items-center justify-center min-h-[200px]">
+      <div className="flex-1 bg-sand flex items-center justify-center min-h-[200px]">
         <div className="text-center">
-          <span className="text-4xl block mb-2">🗺️</span>
-          <p className="text-body text-text-secondary">暂无路线数据</p>
-          <p className="text-caption text-text-tertiary mt-1">
+          <span className="text-5xl block mb-3">🗺️</span>
+          <p className="text-body text-ink-secondary font-medium">暂无路线数据</p>
+          <p className="text-small text-ink-tertiary mt-1.5">
             发送旅行需求后将在此显示路线图
           </p>
         </div>
@@ -90,37 +90,50 @@ export function SvgRouteMap({ geoRoutes }: SvgRouteMapProps) {
       >
         <defs>
           <marker
-            id="svg-arrow"
+            id="svg-arrow-walk"
             markerWidth="8"
             markerHeight="6"
             refX="8"
             refY="3"
             orient="auto"
           >
-            <polygon points="0 0, 8 3, 0 6" fill="#0E9FD6" />
+            <polygon points="0 0, 8 3, 0 6" className="fill-teal" />
+          </marker>
+          <marker
+            id="svg-arrow-drive"
+            markerWidth="8"
+            markerHeight="6"
+            refX="8"
+            refY="3"
+            orient="auto"
+          >
+            <polygon points="0 0, 8 3, 0 6" className="fill-ink" />
           </marker>
         </defs>
 
         {/* 背景网格 */}
         <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e8e8e8" strokeWidth="0.5" />
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e8e0d5" strokeWidth="0.5" />
         </pattern>
         <rect width="100%" height="100%" fill="url(#grid)" />
 
         {/* 路线 */}
-        {lines.map((line, i) => (
-          <line
-            key={`line-${i}`}
-            x1={line.x1}
-            y1={line.y1}
-            x2={line.x2}
-            y2={line.y2}
-            stroke="#0E9FD6"
-            strokeWidth="2.5"
-            strokeDasharray={line.transport === "步行" ? "none" : "6,3"}
-            markerEnd="url(#svg-arrow)"
-          />
-        ))}
+        {lines.map((line, i) => {
+          const isWalking = line.transport === "步行";
+          return (
+            <line
+              key={`line-${i}`}
+              x1={line.x1}
+              y1={line.y1}
+              x2={line.x2}
+              y2={line.y2}
+              className={isWalking ? "stroke-teal" : "stroke-ink"}
+              strokeWidth="2.5"
+              strokeDasharray={isWalking ? "none" : "6,3"}
+              markerEnd={isWalking ? "url(#svg-arrow-walk)" : "url(#svg-arrow-drive)"}
+            />
+          );
+        })}
 
         {/* 景点标记 */}
         {spots.map((spot) => (
@@ -129,8 +142,7 @@ export function SvgRouteMap({ geoRoutes }: SvgRouteMapProps) {
               cx={spot.x}
               cy={spot.y}
               r="14"
-              fill="#12B7F5"
-              stroke="white"
+              className="fill-ink stroke-white"
               strokeWidth="2.5"
             />
             <text
@@ -138,7 +150,7 @@ export function SvgRouteMap({ geoRoutes }: SvgRouteMapProps) {
               y={spot.y}
               textAnchor="middle"
               dy="0.35em"
-              fill="white"
+              className="fill-white"
               fontSize="11"
               fontWeight="700"
             >
@@ -148,7 +160,7 @@ export function SvgRouteMap({ geoRoutes }: SvgRouteMapProps) {
               x={spot.x}
               y={spot.y + 26}
               textAnchor="middle"
-              fill="#6B6F75"
+              className="fill-ink-secondary"
               fontSize="10"
             >
               {spot.name.length > 5 ? spot.name.slice(0, 5) + "..." : spot.name}

@@ -61,10 +61,14 @@ export function ToolStepCard({ step, compact = false }: ToolStepCardProps) {
   }
 
   return (
-    <div className="bg-surface-card border border-divider rounded-card p-3 card-enter">
+    <div className="bg-surface-card border border-warm-border rounded-card p-3 card-enter hover:border-ink transition-colors duration-200">
       {/* 头部：步骤号 + 图标 + 工具名 */}
       <div className="flex items-center gap-2 mb-2">
-        <span className="w-6 h-6 rounded-full bg-primary text-white text-small flex items-center justify-center font-bold">
+        <span
+          className={`w-6 h-6 rounded-full text-white text-small flex items-center justify-center font-bold ${
+            step.result ? "bg-teal" : "bg-ink"
+          }`}
+        >
           {step.step}
         </span>
         <span className="text-lg">{icon}</span>

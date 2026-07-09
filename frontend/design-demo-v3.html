@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TripAgent · 完整设计预览 V3</title>
+<style>
+/* ================================================================
+   DESIGN TOKENS
+   ================================================================ */
+:root {
+  --ink:#1A1D20; --ink2:#4A5568; --ink3:#8899AA;
+  --teal:#0D9488; --teal-dark:#0F766E; --teal-light:#CCFBF1;
+  --rust:#E85D3F; --rust-light:#FEF2EE;
+  --sand:#FBF7F2; --sand2:#F0EAE0;
+  --white:#FFFFFF; --border:#E8E3DD; --border2:#F2EFEB;
+  --font-sans:'Inter','PingFang SC','Microsoft YaHei',sans-serif;
+  --font-serif:'Noto Serif SC','STSong',serif;
+  --r-xs:6px; --r-sm:10px; --r-md:16px; --r-lg:24px; --r-xl:32px;
+  --shadow-sm:0 1px 3px rgba(26,29,32,0.06);
+  --shadow-md:0 4px 16px rgba(26,29,32,0.08);
+  --shadow-lg:0 12px 32px rgba(26,29,32,0.10);
+  --ease:cubic-bezier(0.4,0,0.2,1); --spring:cubic-bezier(0.34,1.56,0.64,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-sans);background:#E8E4DC;color:var(--ink);line-height:1.6;overflow-x:hidden}
+
+/* ================================================================
+   ANIMATIONS
+   ================================================================ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes scaleIn{from{opacity:0;transform:scale(0.94)}to{opacity:1;transform:scale(1)}}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(13,148,136,0.3)}50%{box-shadow:0 0 0 8px rgba(13,148,136,0)}}
+@keyframes dotBounce{0%,80%,100%{transform:scale(0.3);opacity:0.3}40%{transform:scale(1);opacity:1}}
+@keyframes slideRight{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+@keyframes drawPath{to{stroke-dashoffset:0}}
+.afu{animation:fadeUp 0.4s var(--ease) both}
+.asi{animation:scaleIn 0.3s var(--spring) both}
+.afi{animation:fadeIn 0.3s var(--ease) both}
+
+/* ================================================================
+   LAYOUT: PHONE + DESKTOP
+   ================================================================ */
+#phone{
+  max-width:430px;margin:0 auto;background:var(--white);
+  min-height:100dvh;position:relative;overflow:hidden;
+  box-shadow:var(--shadow-lg);
+}
+#desktop{display:none}
+@media(min-width:960px){
+  #phone{display:none}
+  #desktop{display:flex;height:100dvh;max-width:1280px;margin:0 auto;background:var(--white);box-shadow:var(--shadow-lg)}
+  .dt-left{flex:1;display:flex;flex-direction:column;min-width:0;border-right:1px solid var(--border2)}
+  .dt-left-inner{max-width:640px;width:100%;margin:0 auto;display:flex;flex-direction:column;flex:1;min-height:0}
+  .dt-right{width:420px;flex-shrink:0;display:flex;flex-direction:column;background:var(--sand)}
+}
+
+/* ================================================================
+   SHARED COMPONENTS
+   ================================================================ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  font-family:var(--font-sans);font-size:0.875rem;font-weight:600;
+  border:none;border-radius:var(--r-sm);cursor:pointer;
+  padding:11px 20px;min-height:44px;transition:all 0.2s var(--ease);
+}
+.btn:active{transform:scale(0.97)}
+.btn-p{background:var(--ink);color:#fff}
+.btn-p:hover{background:#2D3238}
+.btn-a{background:var(--rust);color:#fff}
+.btn-a:hover{background:#D44A2F}
+.btn-o{background:transparent;border:1.5px solid var(--border);color:var(--ink)}
+.btn-o:hover{border-color:var(--ink)}
+.btn-g{background:transparent;color:var(--ink2)}
+.btn-g:hover{background:var(--sand2)}
+.btn-sm{padding:6px 14px;font-size:0.78rem;min-height:32px;border-radius:var(--r-xs)}
+.btn-icon{width:38px;height:38px;padding:0;border-radius:50%}
+.btn:disabled{opacity:0.4;pointer-events:none}
+
+.tag{
+  display:inline-flex;align-items:center;gap:3px;padding:4px 10px;
+  border-radius:100px;font-size:0.72rem;font-weight:600;white-space:nowrap
+}
+.tag-o{background:transparent;border:1px solid var(--border);color:var(--ink2)}
+.tag-f{background:var(--sand2);color:var(--ink)}
+.tag-t{background:var(--teal-light);color:var(--teal-dark)}
+.tag-r{background:var(--rust-light);color:var(--rust)}
+
+.skeleton{
+  background:linear-gradient(90deg,#F0EAE0 25%,#E8E0D5 50%,#F0EAE0 75%);
+  background-size:200% 100%;animation:shimmer 1.6s ease-in-out infinite;
+  border-radius:var(--r-xs)
+}
+
+.avatar{
+  width:34px;height:34px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.75rem;font-weight:700
+}
+.avatar-user{background:var(--ink);color:#fff}
+.avatar-bot{background:var(--sand2);color:var(--ink)}
+
+/* scrollbar */
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#D5CFC6;border-radius:100px}
+
+/* ================================================================
+   TOAST
+   ================================================================ */
+.toast-wrap{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{
+  padding:11px 20px;border-radius:100px;background:var(--ink);color:#fff;
+  font-size:0.85rem;font-weight:600;box-shadow:var(--shadow-md);
+  animation:fadeUp 0.3s var(--spring);pointer-events:auto;
+  display:flex;align-items:center;gap:6px;white-space:nowrap
+}
+
+/* ================================================================
+   BOTTOM NAV
+   ================================================================ */
+.bottom-nav{
+  display:flex;border-top:1px solid var(--border2);flex-shrink:0;
+  background:rgba(255,255,255,0.85);backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px)
+}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:8px 0 6px;border:none;background:none;cursor:pointer;
+  color:var(--ink3);font-family:var(--font-sans);font-size:0.62rem;
+  font-weight:500;transition:color 0.2s
+}
+.nav-item .ni{font-size:1.2rem}
+.nav-item.active{color:var(--ink)}
+.nav-item.active .ni{font-weight:700}
+
+/* ================================================================
+   TOPBAR
+   ================================================================ */
+.topbar{
+  display:flex;align-items:center;gap:10px;padding:0 16px;height:52px;
+  background:rgba(255,255,255,0.85);backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border2);
+  position:sticky;top:0;z-index:30;flex-shrink:0
+}
+.topbar-brand{font-family:var(--font-serif);font-weight:900;font-size:1.1rem;color:var(--ink)}
+
+/* ================================================================
+   PAGES
+   ================================================================ */
+.page{display:none;flex-direction:column;flex:1;min-height:0;overflow-y:auto}
+.page.active{display:flex}
+
+/* ---- CHAT PAGE ---- */
+.empty-hero{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:40px 24px;text-align:center
+}
+.empty-icon{
+  width:88px;height:88px;border-radius:24px;background:var(--sand2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2.6rem;margin-bottom:20px;animation:breathe 3s ease-in-out infinite
+}
+.empty-hero h2{font-family:var(--font-serif);font-size:1.8rem;font-weight:900;margin-bottom:6px}
+.empty-hero p{font-size:0.9rem;color:var(--ink2);max-width:260px;margin-bottom:24px}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chip{
+  padding:9px 18px;border-radius:100px;font-size:0.84rem;font-weight:500;
+  background:var(--white);border:1px solid var(--border);cursor:pointer;
+  color:var(--ink);transition:all 0.2s var(--ease);font-family:var(--font-sans)
+}
+.chip:hover{border-color:var(--ink);background:var(--sand);transform:translateY(-1px)}
+
+.msg-list{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
+.msg{display:flex;gap:10px;max-width:86%;animation:fadeUp 0.3s var(--ease) both}
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+.msg.assistant{align-self:flex-start}
+.msg-bubble{padding:11px 15px;border-radius:var(--r-md);font-size:0.88rem;line-height:1.55}
+.msg.user .msg-bubble{background:var(--ink);color:#fff;border-bottom-right-radius:5px}
+.msg.assistant .msg-bubble{background:var(--white);border:1px solid var(--border);color:var(--ink);border-bottom-left-radius:5px}
+
+.thinking-row{display:flex;gap:5px;padding:13px 16px}
+.thinking-dot{width:7px;height:7px;border-radius:50%;background:var(--ink3);animation:dotBounce 1.3s ease-in-out infinite}
+.thinking-dot:nth-child(2){animation-delay:0.16s}
+.thinking-dot:nth-child(3){animation-delay:0.32s}
+
+/* Tool progress chips */
+.tool-steps{display:flex;gap:6px;flex-wrap:wrap;padding:4px 0}
+.tool-chip{
+  display:flex;align-items:center;gap:4px;padding:5px 11px;
+  border-radius:100px;font-size:0.7rem;font-weight:600;
+  background:var(--sand);border:1px solid var(--border2);color:var(--ink3);
+  transition:all 0.3s var(--ease)
+}
+.tool-chip.done{background:var(--teal-light);border-color:transparent;color:var(--teal-dark)}
+.tool-chip.active{background:var(--white);border-color:var(--ink);color:var(--ink);animation:pulse 2s infinite}
+
+/* Input */
+.input-bar{padding:12px 16px;background:var(--white);border-top:1px solid var(--border2);flex-shrink:0}
+.input-row{display:flex;align-items:flex-end;gap:8px}
+.input-field{
+  flex:1;border:1.5px solid var(--border);border-radius:20px;
+  padding:10px 16px;font-family:var(--font-sans);font-size:0.88rem;
+  outline:none;resize:none;max-height:120px;background:var(--sand);
+  transition:all 0.2s var(--ease)
+}
+.input-field:focus{border-color:var(--ink);background:var(--white)}
+.input-field::placeholder{color:var(--ink3)}
+.send-btn{
+  width:42px;height:42px;border-radius:50%;border:none;
+  background:var(--ink);color:#fff;font-size:1.05rem;cursor:pointer;
+  flex-shrink:0;transition:all 0.2s var(--ease)
+}
+.send-btn:hover{background:#2D3238;transform:scale(1.04)}
+.send-btn:active{transform:scale(0.94)}
+.send-btn.stop{background:var(--rust)}
+
+/* ---- VIEW SWITCHER (mobile) ---- */
+.view-switcher{
+  display:flex;border-top:1px solid var(--border2);flex-shrink:0
+}
+.vs-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:8px 4px;border:none;background:none;cursor:pointer;
+  font-family:var(--font-sans);font-size:0.62rem;color:var(--ink3);
+  transition:color 0.2s
+}
+.vs-btn .vs-icon{font-size:1.15rem}
+.vs-btn.active{color:var(--ink)}
+
+/* ---- VISUALIZATION PANEL ---- */
+.viz-panel{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.viz-tabs{
+  display:flex;border-bottom:1px solid var(--border2);flex-shrink:0;padding:0 4px
+}
+.viz-tab{
+  flex:1;padding:11px 8px;border:none;background:none;cursor:pointer;
+  font-family:var(--font-sans);font-size:0.8rem;font-weight:600;
+  color:var(--ink3);position:relative;transition:all 0.2s
+}
+.viz-tab.active{color:var(--ink)}
+.viz-tab.active::after{
+  content:'';position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);
+  width:20px;height:3px;border-radius:2px;background:var(--ink)
+}
+.viz-tab .tab-badge{
+  font-size:0.62rem;margin-left:3px;padding:1px 6px;border-radius:100px;
+  background:var(--sand2)
+}
+.viz-tab.active .tab-badge{background:var(--sand2);color:var(--ink)}
+.viz-content{flex:1;overflow-y:auto;padding:12px}
+
+/* Map panel in viz */
+.viz-map{
+  flex:1;background:linear-gradient(180deg,#E8E4DC 0%,#F4F0E8 60%,var(--sand) 100%);
+  border-radius:var(--r-md);overflow:hidden;position:relative;min-height:240px
+}
+.viz-map svg{width:100%;height:100%}
+.viz-weather{
+  position:absolute;top:10px;right:10px;padding:8px 13px;
+  border-radius:var(--r-sm);background:rgba(255,255,255,0.85);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(0,0,0,0.05);display:flex;align-items:center;gap:7px;
+  font-size:0.82rem
+}
+.viz-weather .vw-temp{font-size:1.3rem;font-weight:800}
+
+.map-route-line{fill:none;stroke:var(--ink);stroke-width:2;stroke-dasharray:6 5;stroke-linecap:round;opacity:0.4}
+.map-route-walk{fill:none;stroke:var(--teal);stroke-width:2.5;stroke-linecap:round}
+.map-marker-group{cursor:pointer;transition:transform 0.2s}
+.map-marker-group:hover{transform:scale(1.15)}
+.map-marker-pin{fill:var(--ink);stroke:#fff;stroke-width:2}
+.map-marker-num{fill:#fff;font-size:9px;font-weight:700;text-anchor:middle;dominant-baseline:central;font-family:var(--font-sans)}
+.map-marker-label{fill:var(--ink2);font-size:8px;font-weight:500;text-anchor:middle;font-family:var(--font-sans)}
+
+/* Rankings panel */
+.rank-subtabs{display:flex;gap:6px;margin-bottom:12px}
+.rank-subtab{
+  padding:6px 14px;border-radius:100px;font-size:0.78rem;font-weight:600;
+  cursor:pointer;border:1px solid var(--border);background:var(--white);
+  color:var(--ink2);font-family:var(--font-sans);transition:all 0.2s
+}
+.rank-subtab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.rank-card{
+  display:flex;align-items:center;gap:10px;padding:11px 13px;
+  background:var(--white);border:1px solid var(--border2);border-radius:var(--r-sm);
+  margin-bottom:7px;transition:all 0.2s
+}
+.rank-card:hover{border-color:var(--border);box-shadow:var(--shadow-sm)}
+.rank-badge{
+  width:34px;height:34px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-weight:800;font-size:0.9rem;flex-shrink:0
+}
+.rank-badge.gold{background:linear-gradient(135deg,#FEF3C7,#FDE68A);color:#92400E}
+.rank-badge.silver{background:linear-gradient(135deg,#F1F5F9,#E2E8F0);color:#475569}
+.rank-badge.bronze{background:linear-gradient(135deg,#FEF2F2,#FECACA);color:#991B1B}
+.rank-info{flex:1;min-width:0}
+.rank-name{font-size:0.88rem;font-weight:650;color:var(--ink)}
+.rank-detail{font-size:0.75rem;color:var(--ink2);margin-top:1px}
+.rank-score{font-weight:700;color:var(--rust);font-size:0.85rem;display:flex;align-items:center;gap:2px}
+
+/* Reasoning trace */
+.trace-summary{
+  display:flex;align-items:center;gap:10px;padding:12px 14px;
+  background:var(--sand);border-radius:var(--r-sm);margin-bottom:12px
+}
+.trace-summary-stat{text-align:center}
+.trace-summary-stat .tss-val{font-size:1.2rem;font-weight:800;color:var(--ink)}
+.trace-summary-stat .tss-lbl{font-size:0.65rem;color:var(--ink3)}
+.trace-card{
+  padding:12px 14px;background:var(--white);border:1px solid var(--border2);
+  border-radius:var(--r-sm);margin-bottom:8px;transition:all 0.2s
+}
+.trace-card:hover{border-color:var(--border)}
+.trace-card-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.trace-step-num{
+  width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.68rem;font-weight:700;flex-shrink:0
+}
+.trace-step-num.done{background:var(--teal)}
+.trace-tool-name{font-size:0.85rem;font-weight:650;color:var(--ink)}
+.trace-tool-status{font-size:0.7rem;color:var(--ink3);margin-left:auto}
+.trace-args{
+  font-size:0.7rem;color:var(--ink3);font-family:'JetBrains Mono',monospace;
+  background:var(--sand);padding:6px 10px;border-radius:var(--r-xs);margin-top:6px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer
+}
+.trace-result{
+  font-size:0.75rem;color:var(--ink2);margin-top:4px;padding:4px 0;
+  max-height:60px;overflow:hidden;position:relative
+}
+
+/* ---- TRIPS LIST ---- */
+.trips-header{padding:20px 20px 8px}
+.trips-header h1{font-family:var(--font-serif);font-size:1.8rem;font-weight:900}
+.trips-grid{padding:8px 18px 20px;display:flex;flex-direction:column;gap:14px}
+
+.trip-card{
+  background:var(--white);border:1px solid var(--border2);border-radius:var(--r-md);
+  overflow:hidden;cursor:pointer;transition:all 0.25s var(--ease)
+}
+.trip-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.trip-card:active{transform:scale(0.985)}
+.trip-card-hero{
+  height:110px;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,#E8E0D5,#F0EAE0,#D5CFC6);
+  display:flex;align-items:center;justify-content:center;font-size:2.8rem;opacity:0.7
+}
+.trip-card-hero .tc-status{position:absolute;top:10px;right:10px}
+.trip-card-body{padding:14px}
+.trip-card-body h3{font-size:1.05rem;font-weight:700;margin-bottom:2px}
+.trip-card-stats{display:flex;gap:16px;margin:8px 0}
+.tc-stat{text-align:center}
+.tc-stat-val{font-size:1.1rem;font-weight:700;color:var(--ink)}
+.tc-stat-lbl{font-size:0.62rem;color:var(--ink3);text-transform:uppercase;letter-spacing:0.03em}
+.trip-spot-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.trip-spot-tag{
+  padding:3px 9px;border-radius:5px;font-size:0.7rem;font-weight:500;
+  background:var(--sand);color:var(--ink2)
+}
+
+.skeleton-card{padding:16px;background:var(--white);border:1px solid var(--border2);border-radius:var(--r-md);margin-bottom:12px}
+.skeleton-card .sk-line{margin-bottom:8px}
+.skeleton-card .sk-line:last-child{margin-bottom:0}
+
+/* ---- TRIP DETAIL ---- */
+.detail-hero{
+  position:relative;height:200px;overflow:hidden;flex-shrink:0;
+  background:linear-gradient(160deg,#1A1D20 0%,#2D3238 40%,#4A5568 100%);
+  display:flex;flex-direction:column;justify-content:flex-end;padding:18px;color:#fff
+}
+.detail-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 70% 30%,rgba(255,255,255,0.08) 0%,transparent 60%)}
+.detail-hero-back,.detail-hero-share{
+  position:absolute;top:14px;width:34px;height:34px;border-radius:50%;
+  background:rgba(255,255,255,0.12);border:none;color:#fff;font-size:1rem;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(8px)
+}
+.detail-hero-back{left:14px}
+.detail-hero-share{right:14px}
+.detail-hero-city{font-family:var(--font-serif);font-size:2.2rem;font-weight:900;position:relative}
+.detail-hero-meta{display:flex;gap:8px;margin-top:6px;position:relative}
+.detail-hero-meta span{padding:4px 12px;border-radius:100px;font-size:0.72rem;font-weight:600;background:rgba(255,255,255,0.12);backdrop-filter:blur(8px)}
+
+.detail-body{padding:16px;display:flex;flex-direction:column;gap:16px}
+
+.overview-card{
+  background:var(--white);border:1px solid var(--border2);border-radius:var(--r-md);
+  padding:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center
+}
+.ov-item .ov-val{font-size:1.25rem;font-weight:700;color:var(--ink)}
+.ov-item .ov-lbl{font-size:0.68rem;color:var(--ink3);margin-top:1px}
+
+.day-section{}
+.day-title{
+  font-family:var(--font-serif);font-size:1.2rem;font-weight:700;
+  padding:10px 0 8px;display:flex;align-items:center;gap:8px
+}
+.day-num{
+  width:32px;height:32px;border-radius:50%;background:var(--ink);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-sans);font-size:0.82rem;font-weight:800
+}
+
+.timeline{position:relative;padding-left:26px}
+.timeline::before{
+  content:'';position:absolute;left:9px;top:5px;bottom:5px;
+  width:1.5px;background:var(--border)
+}
+.tl-item{position:relative;padding-bottom:20px;display:flex;flex-direction:column;gap:2px}
+.tl-item:last-child{padding-bottom:0}
+.tl-dot{position:absolute;left:-22px;top:4px;width:10px;height:10px;border-radius:50%;border:2px solid var(--ink);background:var(--white)}
+.tl-dot.first{background:var(--ink)}
+.tl-time{font-size:0.76rem;font-weight:600;color:var(--ink3)}
+.tl-name{font-size:0.92rem;font-weight:650;color:var(--ink)}
+.tl-tags{display:flex;gap:4px;margin-top:1px;flex-wrap:wrap}
+.tl-transport{display:inline-flex;align-items:center;gap:3px;margin-top:3px;font-size:0.73rem;color:var(--teal-dark);font-weight:600}
+.detail-actions{display:flex;gap:10px;padding-bottom:12px}
+.detail-actions .btn{flex:1}
+
+/* ---- MAP PAGE ---- */
+.map-hero{
+  flex:1;position:relative;background:linear-gradient(180deg,#E8E4DC,#F4F0E8,var(--sand));
+  overflow:hidden;min-height:300px
+}
+.map-hero svg{width:100%;height:100%}
+.map-weather-f{
+  position:absolute;top:12px;right:12px;padding:9px 14px;
+  border-radius:var(--r-sm);background:rgba(255,255,255,0.85);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(0,0,0,0.05);display:flex;align-items:center;gap:7px;z-index:5
+}
+.day-strip{display:flex;gap:7px;padding:12px 16px;overflow-x:auto;flex-shrink:0}
+.day-strip::-webkit-scrollbar{display:none}
+.day-pill{
+  padding:7px 16px;border-radius:100px;white-space:nowrap;font-size:0.78rem;
+  font-weight:600;cursor:pointer;border:1px solid var(--border);
+  background:var(--white);color:var(--ink2);font-family:var(--font-sans);transition:all 0.2s;
+}
+.day-pill.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.map-sheet{
+  margin:10px 16px 16px;padding:14px;background:var(--white);
+  border:1px solid var(--border2);border-radius:var(--r-md)
+}
+.spot-row{
+  display:flex;align-items:center;gap:8px;padding:7px 0;
+  border-bottom:1px solid var(--border2);font-size:0.83rem
+}
+.spot-row:last-child{border-bottom:none}
+.spot-dot{
+  width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.62rem;font-weight:700;flex-shrink:0
+}
+
+/* ---- LOGIN ---- */
+.auth-page{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;min-height:100dvh;padding:32px 24px;background:var(--white)
+}
+.auth-hero{text-align:center;margin-bottom:32px}
+.auth-logo{
+  width:68px;height:68px;border-radius:20px;background:var(--sand2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.8rem;margin:0 auto 16px
+}
+.auth-hero h1{font-family:var(--font-serif);font-size:1.8rem;font-weight:900;margin-bottom:4px}
+.auth-form{width:100%;max-width:320px;display:flex;flex-direction:column;gap:12px}
+.auth-input{
+  width:100%;padding:12px 15px;border-radius:var(--r-sm);
+  border:1.5px solid var(--border);background:var(--sand);
+  font-family:var(--font-sans);font-size:0.88rem;outline:none;transition:all 0.2s
+}
+.auth-input:focus{border-color:var(--ink);background:var(--white)}
+.auth-input::placeholder{color:var(--ink3)}
+.auth-form .btn{width:100%}
+.auth-toggle{
+  margin-top:18px;border:none;background:none;cursor:pointer;
+  font-family:var(--font-sans);font-size:0.85rem;color:var(--ink2);font-weight:500
+}
+.auth-toggle:hover{color:var(--ink);text-decoration:underline}
+
+/* ================================================================
+   EMPTY / ERROR STATES
+   ================================================================ */
+.empty-state-wrap{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:48px 24px;text-align:center
+}
+.empty-state-wrap .es-icon{font-size:3.5rem;margin-bottom:14px;opacity:0.5}
+.empty-state-wrap h3{font-size:1.1rem;font-weight:700;margin-bottom:4px}
+.empty-state-wrap p{font-size:0.85rem;color:var(--ink3);max-width:240px;margin-bottom:18px}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<div id="toastWrap" class="toast-wrap"></div>
+
+<!-- ============================================================ -->
+<!--  MOBILE (phone frame)                                        -->
+<!-- ============================================================ -->
+<div id="phone">
+  <!-- Chat Page -->
+  <div class="page active" id="pg-chat">
+    <div class="topbar"><span class="topbar-brand">TripAgent</span><div style="flex:1"></div><div class="avatar avatar-user" style="width:30px;height:30px;font-size:0.68rem">T</div></div>
+    <div id="chatEmpty"><div class="empty-hero"><div class="empty-icon">✈️</div><h2>想去哪里？</h2><p>告诉我你的旅行需求，AI 为你规划旅程</p><div class="chip-row"><button class="chip" onclick="sendQuick('🏖️ 北京3日亲子游')">🏖️ 北京3日亲子游</button><button class="chip" onclick="sendQuick('⛰️ 杭州周末游')">⛰️ 杭州周末游</button><button class="chip" onclick="sendQuick('🎌 大阪文化之旅')">🎌 大阪文化之旅</button></div></div></div>
+    <div class="msg-list" id="msgList" style="display:none"></div>
+    <div class="input-bar"><div class="input-row"><textarea class="input-field" id="chatInput" rows="1" placeholder="说出你的旅行需求…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea><button class="send-btn" id="sendBtn" onclick="sendMsg()">→</button></div></div>
+    <div class="view-switcher">
+      <button class="vs-btn active" data-vs="chat" onclick="switchVS('chat')"><span class="vs-icon">💬</span>对话</button>
+      <button class="vs-btn" data-vs="map" onclick="switchVS('map')"><span class="vs-icon">🗺️</span>地图</button>
+      <button class="vs-btn" data-vs="rankings" onclick="switchVS('rankings')"><span class="vs-icon">📊</span>排名</button>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-item active" data-nav="chat" onclick="go('chat')"><span class="ni">💬</span>首页</button>
+      <button class="nav-item" data-nav="trips" onclick="go('trips')"><span class="ni">📋</span>行程</button>
+      <button class="nav-item" data-nav="login" onclick="go('login')"><span class="ni">👤</span>账户</button>
+    </div>
+  </div>
+
+  <!-- Trips Page -->
+  <div class="page" id="pg-trips">
+    <div class="topbar"><span class="topbar-brand">TripAgent</span></div>
+    <div class="trips-header"><h1>我的行程</h1></div>
+    <div style="flex:1;overflow-y:auto;padding:0 16px 16px">
+      <div id="tripsSkeleton"><div class="skeleton-card"><div class="skeleton sk-line" style="height:16px;width:60%"></div><div class="skeleton sk-line" style="height:80px"></div><div class="skeleton sk-line" style="height:14px;width:40%"></div></div><div class="skeleton-card"><div class="skeleton sk-line" style="height:16px;width:50%"></div><div class="skeleton sk-line" style="height:80px"></div><div class="skeleton sk-line" style="height:14px;width:35%"></div></div><div class="skeleton-card"><div class="skeleton sk-line" style="height:16px;width:55%"></div><div class="skeleton sk-line" style="height:80px"></div><div class="skeleton sk-line" style="height:14px;width:30%"></div></div></div>
+      <div id="tripsList" style="display:none"></div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-item" data-nav="chat" onclick="go('chat')"><span class="ni">💬</span>首页</button>
+      <button class="nav-item active" data-nav="trips" onclick="go('trips')"><span class="ni">📋</span>行程</button>
+      <button class="nav-item" data-nav="login" onclick="go('login')"><span class="ni">👤</span>账户</button>
+    </div>
+  </div>
+
+  <!-- Detail Page -->
+  <div class="page" id="pg-detail"><div class="detail-hero" id="detailHero"></div><div style="flex:1;overflow-y:auto"><div class="detail-body" id="detailBody"></div></div></div>
+
+  <!-- Map Page -->
+  <div class="page" id="pg-map">
+    <div class="topbar"><button class="btn btn-icon btn-g" style="width:34px;height:34px;min-height:34px" onclick="go('detail')">←</button><span class="topbar-brand">路线地图</span></div>
+    <div class="day-strip" id="dayStrip"></div>
+    <div class="map-hero" id="mapHero"></div>
+    <div class="map-sheet" id="mapSheet"></div>
+  </div>
+
+  <!-- Login Page -->
+  <div class="page" id="pg-login"><div class="auth-page"><div class="auth-hero"><div class="auth-logo">✈️</div><h1 id="authTitle">欢迎回来</h1><p style="font-size:0.88rem;color:var(--ink2)" id="authSub">登录 TripAgent 账号</p></div><form class="auth-form" onsubmit="handleAuth(event)"><input class="auth-input" id="nickInput" placeholder="你的称呼（选填）" style="display:none"><input class="auth-input" id="emailInput" type="email" placeholder="your@email.com" required><input class="auth-input" id="passInput" type="password" placeholder="至少 8 位密码" required><button class="btn btn-p" type="submit" id="authBtn">登录</button></form><button class="auth-toggle" id="authToggle" onclick="toggleAuth()">没有账号？注册</button></div></div>
+</div>
+
+<!-- ============================================================ -->
+<!--  DESKTOP LAYOUT                                               -->
+<!-- ============================================================ -->
+<div id="desktop">
+  <div class="dt-left"><div class="dt-left-inner" id="dtLeft"></div></div>
+  <div class="dt-right" id="dtRight"></div>
+</div>
+
+<script>
+// ================================================================
+// STATE
+// ================================================================
+let page='chat',isReg=false,hasChat=false,tripsLoaded=false,vizTab='map',rankSub='food',vsMode='chat';
+const TOOLS=['🔍 搜索景点','🌤️ 查询天气','🗺️ 规划路线','🍜 推荐美食','🏨 搜索酒店'];
+
+// ================================================================
+// ROUTER
+// ================================================================
+function go(p){
+  page=p;
+  document.querySelectorAll('#phone .page').forEach(x=>x.classList.remove('active'));
+  const el=document.getElementById('pg-'+p);if(el)el.classList.add('active');
+  document.querySelectorAll('#phone .nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('#phone .nav-item').forEach(n=>{if(n.dataset.nav===p||(p==='detail'||p==='map')&&n.dataset.nav==='trips')n.classList.add('active')});
+  document.querySelector('#phone .bottom-nav').style.display=(p==='login')?'none':'flex';
+  if(p==='trips'&&!tripsLoaded){setTimeout(loadTrips,500);tripsLoaded=true}
+  if(p==='detail')renderDetail();
+  if(p==='map')renderMapPage();
+  renderDesktop();
+}
+
+// ================================================================
+// TOAST
+// ================================================================
+function toast(m){
+  const c=document.getElementById('toastWrap'),el=document.createElement('div');
+  el.className='toast';el.textContent='✓ '+m;c.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity 0.3s'},2000);
+  setTimeout(()=>el.remove(),2400);
+}
+
+// ================================================================
+// CHAT
+// ================================================================
+function sendQuick(l){addMsg('user',l);simReply(l)}
+function sendMsg(){
+  const i=document.getElementById('chatInput'),t=i.value.trim();
+  if(!t)return;i.value='';addMsg('user',t);simReply(t);
+}
+function addMsg(role,text){
+  hasChat=true;
+  document.getElementById('chatEmpty').style.display='none';
+  const list=document.getElementById('msgList');list.style.display='flex';
+  const d=document.createElement('div');d.className='msg '+role;
+  d.innerHTML=`<div class="avatar ${role==='user'?'avatar-user':'avatar-bot'}">${role==='user'?'我':'AI'}</div><div class="msg-bubble">${esc(text)}</div>`;
+  list.appendChild(d);list.scrollTop=list.scrollHeight;
+  renderDesktop();
+}
+
+function simReply(input){
+  const list=document.getElementById('msgList');
+  // Thinking dots
+  const think=document.createElement('div');think.className='msg assistant';think.id='thinking';
+  think.innerHTML='<div class="avatar avatar-bot">AI</div><div class="msg-bubble"><div class="thinking-row"><span class="thinking-dot"></span><span class="thinking-dot"></span><span class="thinking-dot"></span></div></div>';
+  list.appendChild(think);list.scrollTop=list.scrollHeight;
+
+  // Tool chips
+  const chips=document.createElement('div');chips.className='msg assistant';chips.id='toolChips';
+  chips.innerHTML='<div class="avatar avatar-bot" style="visibility:hidden"></div><div class="msg-bubble" style="background:transparent;border:none;padding:0"><div class="tool-steps" id="toolSteps"></div></div>';
+  list.appendChild(chips);
+
+  const ts=document.getElementById('toolSteps');
+  TOOLS.forEach((t,i)=>{
+    setTimeout(()=>{
+      const c=document.createElement('span');c.className='tool-chip active';c.textContent=t;c.id='tc'+i;
+      ts.appendChild(c);list.scrollTop=list.scrollHeight;
+    },i*600);
+    setTimeout(()=>{
+      const c=document.getElementById('tc'+i);if(c){c.classList.remove('active');c.classList.add('done')}
+    },i*600+400);
+  });
+
+  setTimeout(()=>{
+    document.getElementById('thinking')?.remove();
+    document.getElementById('toolChips')?.remove();
+    addMsg('assistant',genReply(input));
+    // Populate viz data
+    populateVizData();
+    renderDesktop();
+  },TOOLS.length*600+500);
+}
+
+function genReply(input){
+  const c=input.includes('北京')?'北京':input.includes('杭州')?'杭州':input.includes('大阪')?'大阪':'目的地';
+  const d=c==='北京'?3:2;
+  let r=`## 🗺️ ${c}${d}日旅行计划\n\n`;
+  if(c==='北京'){
+    r+=`### 第1天 · 皇城中轴线\n**08:30** 天安门 → **10:00** 故宫(¥60/4h) → **14:30** 景山公园 → **16:30** 南锣鼓巷\n\n### 第2天 · 长城与奥运\n**07:30** 八达岭长城(¥40/3h) → **13:00** 奥林匹克公园 → **16:00** 中国科技馆\n\n### 第3天 · 园林与文化\n**09:00** 颐和园(¥30/3h) → **13:00** 清华大学 → **15:30** 北京动物园🐼\n\n`;
+  }else{
+    r+=`### 第1天\n**09:00** 城市地标 → **12:30** 特色午餐 → **14:00** 文化街区 → **17:00** 夜市\n\n### 第2天\n**08:00** 自然景区 → **12:00** 当地美食 → **15:00** 博物馆\n\n`;
+  }
+  r+=`> 💡 行程已保存，可在「我的行程」查看。`;
+  return r;
+}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+// ================================================================
+// VIEW SWITCHER (mobile) + VIZ DATA
+// ================================================================
+function switchVS(m){
+  vsMode=m;
+  document.querySelectorAll('#phone .vs-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('#phone [data-vs="'+m+'"]').classList.add('active');
+  const list=document.getElementById('msgList');
+  const empty=document.getElementById('chatEmpty');
+  const ibar=document.querySelector('#pg-chat .input-bar');
+  if(m==='chat'){
+    list.style.display=hasChat?'flex':'none';empty.style.display=hasChat?'none':'flex';
+    ibar.style.display='block';
+  }else{
+    list.style.display='block';empty.style.display='none';ibar.style.display='none';
+    showVizMobile(m);
+  }
+}
+
+function showVizMobile(m){
+  const list=document.getElementById('msgList');
+  if(m==='map'){
+    list.innerHTML=`<div class="viz-panel"><div class="viz-tabs"><button class="viz-tab active">🗺️ 地图<span class="tab-badge">6</span></button><button class="viz-tab">📊 排名<span class="tab-badge">3</span></button><button class="viz-tab">🔍 推理<span class="tab-badge">5</span></button></div><div class="viz-content">${genVizMap()}${genRouteSummary()}</div></div>`;
+  }else if(m==='rankings'){
+    list.innerHTML=`<div class="viz-panel"><div class="viz-tabs"><button class="viz-tab">🗺️ 地图<span class="tab-badge">6</span></button><button class="viz-tab active">📊 排名<span class="tab-badge">3</span></button><button class="viz-tab">🔍 推理<span class="tab-badge">5</span></button></div><div class="viz-content">${genRankings()}</div></div>`;
+  }
+}
+
+// ================================================================
+// VIZ: MAP
+// ================================================================
+function genVizMap(){
+  const spots=[{x:45,y:35,l:'1',n:'天安门'},{x:50,y:78,l:'2',n:'故宫'},{x:100,y:108,l:'3',n:'景山公园'},{x:175,y:112,l:'4',n:'南锣鼓巷'},{x:340,y:18,l:'5',n:'八达岭'},{x:295,y:92,l:'6',n:'奥林匹克'}];
+  const markers=spots.map(s=>`<g class="map-marker-group" transform="translate(${s.x},${s.y})"><circle class="map-marker-pin" r="12" cx="0" cy="0"/><text class="map-marker-num" x="0" y="0">${s.l}</text><text class="map-marker-label" x="0" y="23">${s.n}</text></g>`).join('');
+  const path1=`<polyline class="map-route-walk" points="45,35 50,78 100,108 175,112"/>`;
+  const path2=`<polyline class="map-route-line" points="340,18 295,92"/>`;
+  return `<div class="viz-map"><div class="viz-weather"><span>☀️</span><span class="vw-temp">32°</span><span style="font-size:0.75rem;color:var(--ink3)">晴·北京</span></div><svg viewBox="0 0 400 160">${path1}${path2}${markers}</svg></div>`;
+}
+function genRouteSummary(){
+  return `<div style="margin-top:8px;padding:12px;background:var(--white);border:1px solid var(--border2);border-radius:var(--r-sm)"><h4 style="font-size:0.9rem;margin-bottom:6px">📅 第1天路线</h4><p style="font-size:0.78rem;color:var(--ink2)">天安门 → 🚶步行500m → 故宫 → 🚇地铁3站 → 景山公园 → 🚗驾车5km → 南锣鼓巷</p></div>`;
+}
+
+// ================================================================
+// VIZ: RANKINGS
+// ================================================================
+function genRankings(sub){
+  sub=sub||rankSub;
+  const food=[{r:'🥇',n:'老字号烤鸭店',d:'北京菜 · ¥150/人 · 前门大街',s:'4.8',cls:'gold'},{r:'🥈',n:'胡同私房菜',d:'家常菜 · ¥80/人 · 南锣鼓巷',s:'4.6',cls:'silver'},{r:'🥉',n:'簋街小龙虾',d:'川湘菜 · ¥120/人 · 簋街',s:'4.5',cls:'bronze'}];
+  const hotel=[{r:'🥇',n:'王府井希尔顿',d:'五星级 · ¥950/晚 · 地铁直达',s:'4.9',cls:'gold'},{r:'🥈',n:'全季酒店(前门)',d:'经济型 · ¥280/晚 · 交通便利',s:'4.5',cls:'silver'},{r:'🥉',n:'北京诺富特',d:'四星级 · ¥500/晚 · 国际连锁',s:'4.4',cls:'bronze'}];
+  const items=sub==='food'?food:hotel;
+  return `<div class="rank-subtabs"><button class="rank-subtab ${sub==='food'?'active':''}" onclick="switchRankSub('food')">🍜 美食</button><button class="rank-subtab ${sub==='hotel'?'active':''}" onclick="switchRankSub('hotel')">🏨 酒店</button></div>${items.map(i=>`<div class="rank-card"><div class="rank-badge ${i.cls}">${i.r}</div><div class="rank-info"><div class="rank-name">${i.n}</div><div class="rank-detail">${i.d}</div></div><div class="rank-score">⭐${i.s}</div></div>`).join('')}`;
+}
+function switchRankSub(s){rankSub=s;if(vsMode==='rankings')showVizMobile('rankings');renderDesktop();}
+
+// ================================================================
+// VIZ: REASONING TRACE
+// ================================================================
+function genReasoningTrace(){
+  const steps=[
+    {n:1,t:'search_attractions',icon:'🔍',name:'搜索景点',args:'{"city":"北京","keyword":"亲子"}',done:true,result:'找到 5 个景点：故宫、科技馆...'},
+    {n:2,t:'get_weather',icon:'🌤️',name:'查询天气',args:'{"city":"北京","date":"2026-07-10"}',done:true,result:'晴 32°C 湿度45% 风力2级'},
+    {n:3,t:'plan_route',icon:'🗺️',name:'规划路线',args:'{"spot_a":"天安门","spot_b":"故宫"}',done:true,result:'步行500m 约6分钟'},
+    {n:4,t:'search_restaurants',icon:'🍜',name:'推荐美食',args:'{"city":"北京","near_spot":"故宫"}',done:true,result:'找到 6 家餐厅'},
+    {n:5,t:'search_hotels',icon:'🏨',name:'搜索酒店',args:'{"city":"北京","near_spot":"王府井"}',done:true,result:'找到 5 家酒店'},
+  ];
+  return `<div class="trace-summary"><div class="trace-summary-stat"><div class="tss-val">5</div><div class="tss-lbl">总步数</div></div><div class="trace-summary-stat"><div class="tss-val">5</div><div class="tss-lbl">已完成</div></div><div class="trace-summary-stat"><div class="tss-val">~8s</div><div class="tss-lbl">耗时</div></div></div>${steps.map(s=>`<div class="trace-card"><div class="trace-card-header"><span class="trace-step-num done">${s.n}</span><span class="trace-tool-name">${s.icon} ${s.name}</span><span class="trace-tool-status">✓ 完成</span></div><div class="trace-args" title="${esc(s.args)}">📥 ${esc(s.args)}</div><div class="trace-result">📤 ${esc(s.result)}</div></div>`).join('')}`;
+}
+
+// ================================================================
+// POPULATE VIZ DATA (after chat)
+// ================================================================
+function populateVizData(){
+  // This would be driven by store in real app; here we just ensure renderDesktop picks it up
+}
+
+// ================================================================
+// TRIPS LIST
+// ================================================================
+function loadTrips(){
+  document.getElementById('tripsSkeleton').style.display='none';
+  document.getElementById('tripsList').style.display='flex';document.getElementById('tripsList').style.flexDirection='column';document.getElementById('tripsList').style.gap='12px';
+  const trips=[{id:1,title:'北京3日亲子游',city:'北京',days:3,status:'confirmed',spots:['天安门','故宫','景山公园','南锣鼓巷','八达岭长城','颐和园'],date:'2026-07-05'},{id:2,title:'杭州周末漫游',city:'杭州',days:2,status:'draft',spots:['西湖','灵隐寺','龙井村','河坊街'],date:'2026-07-01'},{id:3,title:'大阪深度文化之旅',city:'大阪',days:4,status:'confirmed',spots:['大阪城','道顿堀','环球影城','心斋桥','通天阁'],date:'2026-06-28'}];
+  document.getElementById('tripsList').innerHTML=trips.map((t,i)=>`<div class="trip-card afu" style="animation-delay:${i*0.1}s" onclick="go('detail')"><div class="trip-card-hero"><span>🏙️</span><div class="tc-status"><span class="tag ${t.status==='confirmed'?'tag-t':'tag-o'}">${t.status==='confirmed'?'已确认':'草稿'}</span></div></div><div class="trip-card-body"><h3>${t.title}</h3><p style="font-size:0.8rem;color:var(--ink3)">${t.city}</p><div class="trip-card-stats"><div class="tc-stat"><div class="tc-stat-val">${t.days}</div><div class="tc-stat-lbl">天数</div></div><div class="tc-stat"><div class="tc-stat-val">${t.spots.length}</div><div class="tc-stat-lbl">景点</div></div><div class="tc-stat"><div class="tc-stat-val">${t.date.slice(5)}</div><div class="tc-stat-lbl">日期</div></div></div><div class="trip-spot-tags">${t.spots.slice(0,4).map(s=>`<span class="trip-spot-tag">${s}</span>`).join('')}${t.spots.length>4?`<span class="trip-spot-tag" style="background:transparent;border:1px dashed var(--border)">+${t.spots.length-4}</span>`:''}</div></div></div>`).join('');
+}
+
+// ================================================================
+// TRIP DETAIL
+// ================================================================
+function renderDetail(){
+  document.getElementById('detailHero').innerHTML=`<button class="detail-hero-back" onclick="go('trips')">←</button><button class="detail-hero-share" onclick="toast('分享链接已复制')">🔗</button><h1 class="detail-hero-city">北京</h1><div class="detail-hero-meta"><span>3 天行程</span><span>已确认</span></div>`;
+  document.getElementById('detailBody').innerHTML=`
+    <div class="overview-card afu"><div class="ov-item"><div class="ov-val">3</div><div class="ov-lbl">天数</div></div><div class="ov-item"><div class="ov-val">10</div><div class="ov-lbl">景点</div></div><div class="ov-item"><div class="ov-val">¥177</div><div class="ov-lbl">门票合计</div></div></div>
+    ${[1,2,3].map(d=>`<div class="day-section afu" style="animation-delay:${d*0.1}s"><div class="day-title"><span class="day-num">${d}</span>${['皇城中轴线','长城与奥运','园林与文化'][d-1]}</div><div class="timeline">${genTimeline(d)}</div></div>`).join('')}
+    <div class="detail-actions afu" style="animation-delay:0.4s"><button class="btn btn-o" onclick="go('map')">🗺️ 查看地图</button><button class="btn btn-p" onclick="toast('分享链接已复制')">🔗 分享行程</button></div>`;
+}
+function genTimeline(day){
+  const data={1:[{t:'08:30',n:'天安门广场',d:'1.5h',p:'免费',tr:'🚶 步行 500m → 故宫博物院'},{t:'10:00',n:'故宫博物院',d:'4h',p:'¥60',tr:'🚇 地铁 3站 → 景山公园'},{t:'14:30',n:'景山公园',d:'1.5h',p:'¥2',tr:'🚗 驾车 5km → 南锣鼓巷'},{t:'16:30',n:'南锣鼓巷',d:'2h',p:'免费',tr:''}],2:[{t:'07:30',n:'八达岭长城',d:'3h',p:'¥40',tr:'🚗 驾车 60km → 奥林匹克公园'},{t:'13:00',n:'奥林匹克公园',d:'2h',p:'免费',tr:'🚇 地铁 2站 → 科技馆'},{t:'16:00',n:'中国科技馆',d:'2.5h',p:'¥30',tr:''}],3:[{t:'09:00',n:'颐和园',d:'3h',p:'¥30',tr:'🚗 驾车 8km → 清华大学'},{t:'13:00',n:'清华大学',d:'2h',p:'免费',tr:'🚇 地铁 5站 → 北京动物园'},{t:'15:30',n:'北京动物园 🐼',d:'2h',p:'¥15',tr:''}]};
+  return data[day].map((s,i)=>`<div class="tl-item"><div class="tl-dot${i===0?' first':''}"></div><div class="tl-time">${s.t}</div><div class="tl-name">${s.n}</div><div class="tl-tags"><span class="tag tag-o">${s.d}</span><span class="tag tag-t">${s.p}</span></div>${s.tr?`<div class="tl-transport">${s.tr}</div>`:''}</div>`).join('');
+}
+
+// ================================================================
+// MAP PAGE
+// ================================================================
+function renderMapPage(){
+  document.getElementById('dayStrip').innerHTML=['全部','第1天','第2天','第3天'].map((d,i)=>`<button class="day-pill ${i===0?'active':''}" onclick="switchMDay(this,${i})">${d}</button>`).join('');
+  renderMapSvg(0);updateMapSheet(0);
+}
+const mSpots={1:[{x:45,y:30,n:'天安门'},{x:48,y:75,n:'故宫'},{x:98,y:105,n:'景山公园'},{x:175,y:110,n:'南锣鼓巷'}],2:[{x:345,y:18,n:'八达岭'},{x:295,y:90,n:'奥林匹克'},{x:245,y:130,n:'科技馆'}],3:[{x:315,y:150,n:'颐和园'},{x:235,y:190,n:'清华大学'},{x:95,y:210,n:'动物园'}]};
+function renderMapSvg(day){
+  let spots=[],paths='';
+  if(day===0){Object.values(mSpots).forEach(s=>spots.push(...s));[1,2,3].forEach(d=>{const pts=mSpots[d].map(s=>`${s.x},${s.y}`).join(' ');paths+=`<polyline class="map-route-line" points="${pts}"/>`;});paths+=`<polyline class="map-route-walk" points="${mSpots[1].map(s=>`${s.x},${s.y}`).join(' ')}"/>`;}
+  else{spots=mSpots[day];const pts=spots.map(s=>`${s.x},${s.y}`).join(' ');paths+=`<polyline class="map-route-line" points="${pts}"/>`;if(day===1)paths+=`<polyline class="map-route-walk" points="${pts}"/>`;}
+  const markers=spots.map((s,i)=>`<g class="map-marker-group" transform="translate(${s.x},${s.y})"><circle class="map-marker-pin" r="12" cx="0" cy="0"/><text class="map-marker-num" x="0" y="0">${i+1}</text><text class="map-marker-label" x="0" y="24">${s.n}</text></g>`).join('');
+  document.getElementById('mapHero').innerHTML=`<div class="map-weather-f"><span>☀️</span><span style="font-size:1.3rem;font-weight:800">32°</span><span style="font-size:0.78rem;color:var(--ink3)">晴·北京</span></div><svg viewBox="0 0 400 240" style="width:100%;height:100%">${paths}${markers}</svg>`;
+}
+function switchMDay(btn,day){
+  document.querySelectorAll('#pg-map .day-pill').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  renderMapSvg(day);updateMapSheet(day);
+}
+function updateMapSheet(day){
+  const s=document.getElementById('mapSheet');
+  if(day===0)s.innerHTML='<p style="text-align:center;color:var(--ink3);padding:6px">显示全部 3 天 · 10 个景点</p>';
+  else{const spots=mSpots[day];s.innerHTML=`<h4 style="margin-bottom:8px">第 ${day} 天 · ${spots.length} 个景点</h4>${spots.map((sp,i)=>`<div class="spot-row"><span class="spot-dot">${i+1}</span><span style="flex:1">${sp.n}</span>${i<spots.length-1?'<span style="font-size:0.7rem;color:var(--ink3)">→</span>':''}</div>`).join('')}`;}
+}
+
+// ================================================================
+// AUTH
+// ================================================================
+function toggleAuth(){
+  isReg=!isReg;
+  document.getElementById('authTitle').textContent=isReg?'创建账号':'欢迎回来';
+  document.getElementById('authSub').textContent=isReg?'注册 TripAgent，开始旅行规划':'登录 TripAgent 账号';
+  document.getElementById('authBtn').textContent=isReg?'注册':'登录';
+  document.getElementById('authToggle').textContent=isReg?'已有账号？登录':'没有账号？注册';
+  document.getElementById('nickInput').style.display=isReg?'block':'none';
+}
+function handleAuth(e){
+  e.preventDefault();
+  const btn=document.getElementById('authBtn');btn.textContent='...';btn.disabled=true;
+  setTimeout(()=>{btn.textContent=isReg?'注册':'登录';btn.disabled=false;toast(isReg?'注册成功！':'登录成功！');setTimeout(()=>go('chat'),500)},1000);
+}
+
+// ================================================================
+// DESKTOP RENDERING
+// ================================================================
+function renderDesktop(){
+  const L=document.getElementById('dtLeft'),R=document.getElementById('dtRight');
+  if(!L||!R)return;
+
+  // Left: chat
+  L.innerHTML=`
+    <div class="topbar"><span class="topbar-brand">TripAgent</span><div style="flex:1"></div><div class="avatar avatar-user" style="width:30px;height:30px;font-size:0.68rem">T</div></div>
+    ${hasChat?`<div class="msg-list" style="flex:1">${document.getElementById('msgList')?document.getElementById('msgList').innerHTML:''}</div>`:`<div class="empty-hero"><div class="empty-icon">✈️</div><h2>想去哪里？</h2><p>告诉我你的旅行需求，AI 为你规划旅程</p><div class="chip-row"><button class="chip" onclick="sendQuick('🏖️ 北京3日亲子游')">🏖️ 北京3日亲子游</button><button class="chip" onclick="sendQuick('⛰️ 杭州周末游')">⛰️ 杭州周末游</button><button class="chip" onclick="sendQuick('🎌 大阪文化之旅')">🎌 大阪文化之旅</button></div></div>`}
+    <div class="input-bar"><div class="input-row"><textarea class="input-field" rows="1" placeholder="说出你的旅行需求…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea><button class="send-btn" onclick="sendMsg()">→</button></div></div>`;
+
+  // Right: VisualizationPanel with 3 tabs
+  R.innerHTML=`
+    <div class="viz-panel">
+      <div class="viz-tabs">
+        <button class="viz-tab ${vizTab==='map'?'active':''}" onclick="switchVizTab('map')">🗺️ 地图<span class="tab-badge">${hasChat?'6':'0'}</span></button>
+        <button class="viz-tab ${vizTab==='rankings'?'active':''}" onclick="switchVizTab('rankings')">📊 排名<span class="tab-badge">${hasChat?'3':'0'}</span></button>
+        <button class="viz-tab ${vizTab==='trace'?'active':''}" onclick="switchVizTab('trace')">🔍 推理<span class="tab-badge">${hasChat?'5':'0'}</span></button>
+      </div>
+      <div class="viz-content">${getVizContent()}</div>
+    </div>`;
+}
+function switchVizTab(t){vizTab=t;renderDesktop();}
+function getVizContent(){
+  if(!hasChat)return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center;color:var(--ink3)"><span style="font-size:3rem;margin-bottom:12px">${vizTab==='map'?'🗺️':vizTab==='rankings'?'📊':'🔍'}</span><p style="font-size:0.85rem">发送旅行需求后</p><p style="font-size:0.78rem">${vizTab==='map'?'路线和景点将在此显示':vizTab==='rankings'?'美食和酒店排名将在此显示':'工具调用步骤将在此显示'}</p></div>`;
+  if(vizTab==='map')return genVizMap()+genRouteSummary();
+  if(vizTab==='rankings')return genRankings();
+  return genReasoningTrace();
+}
+
+// ================================================================
+// INIT
+// ================================================================
+renderDesktop();
+</script>
+</body>
+</html>

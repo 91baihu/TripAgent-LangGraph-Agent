@@ -22,7 +22,7 @@ export function Card({
       className={`
         bg-surface-card rounded-card border border-divider
         ${padding ? "p-4" : ""}
-        ${hover ? "cursor-pointer transition-shadow duration-200 hover:shadow-card-hover active:scale-[0.99]" : ""}
+        ${hover ? "cursor-pointer transition-all duration-250 hover:shadow-warm-md hover:-translate-y-0.5 active:scale-[0.985]" : ""}
         ${onClick ? "cursor-pointer" : ""}
         ${className}
       `}

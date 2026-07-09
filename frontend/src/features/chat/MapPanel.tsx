@@ -102,10 +102,10 @@ export function MapPanel() {
 
       {/* 加载骨架（初始加载中） */}
       {!loaded && !loadTimeout && (
-        <div className="absolute inset-0 bg-surface-input flex items-center justify-center">
+        <div className="absolute inset-0 bg-sand flex items-center justify-center">
           <div className="text-center">
-            <div className="w-12 h-12 mx-auto mb-3 skeleton-shimmer rounded-full" />
-            <p className="text-caption text-text-tertiary">地图加载中...</p>
+            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-sand-dark animate-breathe" />
+            <p className="text-caption text-ink-tertiary">地图加载中...</p>
           </div>
         </div>
       )}
@@ -122,10 +122,13 @@ export function MapPanel() {
       {/* 空状态（Amap 可用但无数据） */}
       {showAmap && geoRoutes.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-center bg-white/80 backdrop-blur px-6 py-4 rounded-card">
-            <span className="text-4xl block mb-2">🗺️</span>
-            <p className="text-body text-text-secondary">
+          <div className="text-center bg-white/85 backdrop-blur border border-black/5 rounded-card px-8 py-6 shadow-warm-sm">
+            <span className="text-5xl block mb-3">🗺️</span>
+            <p className="text-body text-ink-secondary font-medium">
               发送旅行需求后，路线地图将在此显示
+            </p>
+            <p className="text-small text-ink-tertiary mt-1.5">
+              尝试描述你的旅行计划开始规划吧
             </p>
           </div>
         </div>

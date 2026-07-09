@@ -34,27 +34,26 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-dvh px-6 bg-surface-page">
+    <div className="flex flex-col items-center justify-center min-h-dvh px-6 bg-white">
       {/* Logo */}
       <div
         className="
-          w-16 h-16 rounded-full flex items-center justify-center
-          bg-gradient-to-br from-primary to-primary-hover
-          shadow-button mb-6
+          w-[68px] h-[68px] rounded-2xl flex items-center justify-center
+          bg-sand shadow-warm-sm mb-6
         "
       >
-        <span className="text-2xl">✈️</span>
+        <span className="text-[1.8rem]">✈️</span>
       </div>
 
-      <h1 className="text-h1 text-text-primary mb-1">
+      <h1 className="font-serif text-[1.8rem] font-black text-text-primary mb-1">
         {isRegister ? "创建账号" : "欢迎回来"}
       </h1>
-      <p className="text-body text-text-secondary mb-8">
-        {isRegister ? "注册 TripAgent，开始智能旅行规划" : "登录你的 TripAgent 账号"}
+      <p className="text-body text-ink-secondary mb-8">
+        {isRegister ? "注册 TripAgent，开始旅行规划" : "登录 TripAgent 账号"}
       </p>
 
       {/* 表单 */}
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
+      <form onSubmit={handleSubmit} className="w-full max-w-[320px] flex flex-col gap-3">
         {isRegister && (
           <Input
             label="昵称"
@@ -88,7 +87,7 @@ export function LoginPage() {
       {/* 切换登录/注册 */}
       <button
         onClick={() => setIsRegister(!isRegister)}
-        className="mt-6 text-body text-primary hover:text-primary-hover transition-colors"
+        className="mt-[18px] text-sm text-ink-secondary hover:text-text-primary hover:underline transition-colors bg-transparent border-none cursor-pointer font-medium"
       >
         {isRegister ? "已有账号？登录" : "没有账号？注册"}
       </button>

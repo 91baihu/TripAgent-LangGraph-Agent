@@ -34,7 +34,7 @@ export function WeatherCard({ weather, compact = false, className = "" }: Weathe
       <div
         className={`
           inline-flex items-center gap-2 px-3 py-2
-          bg-white/95 backdrop-blur rounded-card shadow-card
+          bg-white/85 backdrop-blur border border-black/5 rounded-card
           ${className}
         `}
       >

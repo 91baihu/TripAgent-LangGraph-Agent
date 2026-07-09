@@ -56,35 +56,42 @@ export function ChatPage() {
   const chatContent = (
     <div className="flex-1 overflow-y-auto px-4 py-4">
       {showEmpty ? (
-        /* 空状态 — QQ 风格 */
+        /* 空状态 — Demo V3 编辑风格 */
         <div className="flex flex-col items-center justify-center h-full text-center">
           <div
             className="
-              w-20 h-20 rounded-full flex items-center justify-center
-              bg-gradient-to-br from-primary to-primary-hover
-              shadow-button mb-6
+              w-[88px] h-[88px] rounded-[24px] flex items-center justify-center
+              bg-sand-dark mb-5 animate-breathe
             "
           >
-            <span className="text-4xl">✈️</span>
+            <span className="text-[2.6rem]">✈️</span>
           </div>
-          <h2 className="text-h2 text-text-primary mb-2">想去哪里旅行？</h2>
-          <p className="text-body text-text-secondary mb-6 max-w-[260px]">
-            告诉我你的需求，AI 为你量身规划行程
+          <h2 className="font-serif text-[1.8rem] font-black text-text-primary mb-1.5">
+            想去哪里？
+          </h2>
+          <p className="text-body text-ink-secondary mb-6 max-w-[260px]">
+            告诉我你的旅行需求，AI 为你规划旅程
           </p>
           <div className="flex flex-wrap gap-2 justify-center">
             {QUICK_SUGGESTIONS.map((s) => (
-              <Tag
+              <button
                 key={s.label}
-                variant="default"
                 onClick={() => {
                   if (!isStreaming) {
                     setMobileView("chat");
                     sendMessage(s.label);
                   }
                 }}
+                className="
+                  inline-flex items-center px-4 py-2.5 rounded-full
+                  text-sm font-medium bg-white border border-warm-border
+                  text-text-primary transition-all duration-200
+                  hover:border-text-primary hover:bg-sand hover:-translate-y-px
+                  active:scale-95
+                "
               >
                 {s.emoji} {s.label}
-              </Tag>
+              </button>
             ))}
           </div>
         </div>
@@ -131,9 +138,9 @@ export function ChatPage() {
 
   // ========== 输入栏 ==========
   const inputBar = (
-    <div className="flex-shrink-0 p-3 bg-surface-card border-t border-divider">
+    <div className="flex-shrink-0 p-3 bg-white border-t border-warm-border2">
       <div className="flex items-end gap-2">
-        <div className="flex-1 bg-surface-input rounded-input border border-transparent focus-within:border-primary focus-within:bg-surface-card transition-colors">
+        <div className="flex-1 bg-sand rounded-[20px] border-[1.5px] border-warm-border focus-within:border-text-primary focus-within:bg-white transition-colors">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -142,8 +149,8 @@ export function ChatPage() {
             rows={1}
             className="
               w-full bg-transparent text-body text-text-primary
-              placeholder:text-text-tertiary outline-none
-              px-4 py-3 resize-none max-h-[120px]
+              placeholder:text-ink-tertiary outline-none
+              px-4 py-2.5 resize-none max-h-[120px]
             "
           />
         </div>
@@ -151,26 +158,27 @@ export function ChatPage() {
           <button
             onClick={cancelStream}
             className="
-              h-[44px] px-4 rounded-button bg-semantic-error text-white
-              text-caption font-medium hover:opacity-90 active:scale-95
-              transition-all flex-shrink-0
+              w-[42px] h-[42px] rounded-full bg-rust text-white
+              text-lg font-bold hover:opacity-90 active:scale-95
+              transition-all flex-shrink-0 flex items-center justify-center
             "
           >
-            停止
+            ■
           </button>
         ) : (
           <button
             onClick={handleSend}
             disabled={!input.trim()}
             className="
-              w-[44px] h-[44px] rounded-button
-              bg-primary text-white shadow-button
-              hover:bg-primary-hover active:scale-95
+              w-[42px] h-[42px] rounded-full
+              bg-text-primary text-white
+              hover:bg-ink-secondary active:scale-95
               disabled:opacity-40 disabled:active:scale-100
               flex items-center justify-center transition-all flex-shrink-0
+              text-lg
             "
           >
-            ✈️
+            →
           </button>
         )}
       </div>
@@ -196,12 +204,12 @@ export function ChatPage() {
       {/* Header */}
       <header
         className="
-          flex-shrink-0 h-14 bg-surface-card border-b border-divider
-          flex items-center justify-between px-4
+          flex-shrink-0 h-[52px] bg-white/85 backdrop-blur border-b border-warm-border2
+          flex items-center justify-between px-4 sticky top-0 z-30
         "
       >
-        <h1 className="text-h3 text-primary font-bold">✈️ TripAgent</h1>
-        <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center text-primary text-small font-bold">
+        <h1 className="font-serif text-lg font-black text-text-primary">TripAgent</h1>
+        <div className="w-[30px] h-[30px] rounded-full bg-text-primary flex items-center justify-center text-white text-[11px] font-bold">
           T
         </div>
       </header>
@@ -209,7 +217,7 @@ export function ChatPage() {
       {/* ===== 桌面端：左右分屏 ===== */}
       <div className="hidden md:flex flex-1 min-h-0">
         {/* 左栏：聊天 — 居中限宽 */}
-        <div className="flex-1 flex flex-col min-w-0 border-r border-divider">
+        <div className="flex-1 flex flex-col min-w-0 border-r border-warm-border2">
           <div className="max-w-2xl mx-auto w-full flex flex-col flex-1 min-h-0">
             {chatContent}
             <SearchProgress />
@@ -218,7 +226,7 @@ export function ChatPage() {
         </div>
 
         {/* 右栏：可视化面板 */}
-        <div className="w-[420px] flex-shrink-0 flex flex-col min-h-0 bg-surface-page">
+        <div className="w-[420px] flex-shrink-0 flex flex-col min-h-0 bg-sand">
           <VisualizationPanel variant="desktop" />
         </div>
       </div>

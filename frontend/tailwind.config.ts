@@ -3,7 +3,7 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
-      // ===== QQ 极简色彩体系 =====
+      // ===== QQ 极简色彩体系（保留向后兼容） =====
       colors: {
         primary: {
           DEFAULT: "#12B7F5", // QQ 蓝
@@ -29,9 +29,34 @@ export default {
           link: "#576B95",
         },
         divider: "#EDEDEF",
+
+        // 🆕 Demo V3 暖色调色板（编辑风格）
+        ink: {
+          DEFAULT: "#1A1D20",
+          secondary: "#4A5568",
+          tertiary: "#8899AA",
+        },
+        teal: {
+          DEFAULT: "#0D9488",
+          dark: "#0F766E",
+          light: "#CCFBF1",
+        },
+        rust: {
+          DEFAULT: "#E85D3F",
+          light: "#FEF2EE",
+        },
+        sand: {
+          DEFAULT: "#FBF7F2",
+          dark: "#F0EAE0",
+          bg: "#E8E4DC",
+        },
+        warm: {
+          border: "#E8E3DD",
+          border2: "#F2EFEB",
+        },
       },
 
-      // ===== 字体 =====
+      // ===== 字体（新增衬线标题） =====
       fontFamily: {
         sans: [
           '"PingFang SC"',
@@ -39,6 +64,12 @@ export default {
           '"Hiragino Sans GB"',
           "-apple-system",
           "sans-serif",
+        ],
+        serif: [
+          '"Noto Serif SC"',
+          '"STSong"',
+          '"SimSun"',
+          "serif",
         ],
       },
       fontSize: {
@@ -50,7 +81,7 @@ export default {
         small: ["11px", { lineHeight: "16px", fontWeight: "400" }],
       },
 
-      // ===== 圆角（QQ 特色：Button/Input 用 10px） =====
+      // ===== 圆角（新增 xs/xl 档位） =====
       borderRadius: {
         button: "10px",
         input: "10px",
@@ -59,18 +90,24 @@ export default {
         bubble: "18px",
         tag: "6px",
         modal: "20px",
+        xs: "6px",
+        xl: "32px",
       },
 
-      // ===== 阴影（极轻） =====
+      // ===== 阴影 =====
       boxShadow: {
         card: "0 2px 8px rgba(0,0,0,0.04)",
         "card-hover": "0 4px 12px rgba(0,0,0,0.06)",
         modal: "0 8px 24px rgba(0,0,0,0.10)",
         button: "0 4px 10px rgba(18,183,245,0.25)",
         nav: "0 1px 0 0 rgba(0,0,0,0.04)",
+        // 🆕 Demo 风格阴影
+        "warm-sm": "0 1px 3px rgba(26,29,32,0.06)",
+        "warm-md": "0 4px 16px rgba(26,29,32,0.08)",
+        "warm-lg": "0 12px 32px rgba(26,29,32,0.10)",
       },
 
-      // ===== 间距（8px 体系，Tailwind 默认是 4px） =====
+      // ===== 间距（8px 体系） =====
       spacing: {
         0: "0",
         1: "4px",
@@ -81,6 +118,47 @@ export default {
         6: "24px",
         8: "32px",
         12: "48px",
+      },
+
+      // 🆕 动画关键帧
+      keyframes: {
+        shimmer: {
+          "0%": { backgroundPosition: "200% 0" },
+          "100%": { backgroundPosition: "-200% 0" },
+        },
+        breathe: {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.04)" },
+        },
+        "pulse-ring": {
+          "0%, 100%": { boxShadow: "0 0 0 0 rgba(13,148,136,0.3)" },
+          "50%": { boxShadow: "0 0 0 8px rgba(13,148,136,0)" },
+        },
+        "dot-bounce": {
+          "0%, 80%, 100%": { transform: "scale(0.3)", opacity: "0.3" },
+          "40%": { transform: "scale(1)", opacity: "1" },
+        },
+        "fade-up": {
+          from: { opacity: "0", transform: "translateY(16px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "scale-in": {
+          from: { opacity: "0", transform: "scale(0.94)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
+        "slide-right": {
+          from: { opacity: "0", transform: "translateX(-12px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
+      },
+      animation: {
+        shimmer: "shimmer 1.6s ease-in-out infinite",
+        breathe: "breathe 3s ease-in-out infinite",
+        "pulse-ring": "pulse-ring 2s infinite",
+        "dot-bounce": "dot-bounce 1.3s ease-in-out infinite",
+        "fade-up": "fade-up 0.4s cubic-bezier(0.4,0,0.2,1) both",
+        "scale-in": "scale-in 0.3s cubic-bezier(0.34,1.56,0.64,1) both",
+        "slide-right": "slide-right 0.3s cubic-bezier(0.4,0,0.2,1) both",
       },
     },
   },

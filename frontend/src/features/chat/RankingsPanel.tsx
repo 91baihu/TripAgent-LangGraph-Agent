@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useChatStore } from "../../stores/chatStore";
 import { RankingList, HotelRankingList } from "../../components/RankingList/RankingList";
-import { Tag } from "../../components/Tag/Tag";
 
 type SubTab = "food" | "hotel";
 
@@ -33,21 +32,31 @@ export function RankingsPanel() {
   return (
     <div className="flex flex-col h-full">
       {/* 子 Tab 切换 */}
-      <div className="flex-shrink-0 flex gap-1 px-4 py-3 border-b border-divider">
-        <Tag
-          variant="primary"
-          active={activeSubTab === "food"}
+      <div className="flex-shrink-0 flex gap-1.5 px-4 py-3 border-b border-divider">
+        <button
           onClick={() => setActiveSubTab("food")}
+          className={`
+            px-3.5 py-1.5 rounded-full text-caption font-semibold
+            transition-all duration-200 cursor-pointer border
+            ${activeSubTab === "food"
+              ? "bg-ink text-white border-ink"
+              : "bg-white text-ink-secondary border-warm-border hover:border-ink-secondary"}
+          `}
         >
           🍜 美食 ({allRestaurants.length})
-        </Tag>
-        <Tag
-          variant="primary"
-          active={activeSubTab === "hotel"}
+        </button>
+        <button
           onClick={() => setActiveSubTab("hotel")}
+          className={`
+            px-3.5 py-1.5 rounded-full text-caption font-semibold
+            transition-all duration-200 cursor-pointer border
+            ${activeSubTab === "hotel"
+              ? "bg-ink text-white border-ink"
+              : "bg-white text-ink-secondary border-warm-border hover:border-ink-secondary"}
+          `}
         >
           🏨 酒店 ({allHotels.length})
-        </Tag>
+        </button>
       </div>
 
       {/* 内容区 */}

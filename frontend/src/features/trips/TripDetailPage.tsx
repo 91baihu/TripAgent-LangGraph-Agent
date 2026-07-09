@@ -72,50 +72,119 @@ export function TripDetailPage() {
 
   if (!trip) return null;
 
+  const allSpots = Object.values(trip.itinerary_json).flat();
+  const totalPrice = allSpots.reduce(
+    (sum, s) => sum + (s.price || 0),
+    0,
+  );
+
   return (
     <div className="min-h-dvh bg-surface-page">
-      {/* 顶栏 */}
+      {/* 深色渐变 Hero */}
       <header
         className="
-          sticky top-0 z-10 h-14 bg-surface-card border-b border-divider
-          flex items-center gap-3 px-4
+          relative h-[200px] overflow-hidden flex-shrink-0
+          bg-gradient-to-br from-ink to-ink-secondary
+          flex flex-col justify-end p-[18px] text-white
         "
       >
+        {/* 径向光晕叠加 */}
+        <div
+          className="
+            absolute inset-0
+            bg-[radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.08)_0%,transparent_60%)]
+          "
+        />
+
+        {/* 返回按钮 — 毛玻璃圆形 */}
         <button
           onClick={() => navigate(-1)}
-          className="w-8 h-8 flex items-center justify-center text-text-secondary hover:text-text-primary"
+          className="
+            absolute top-[14px] left-[14px]
+            w-[34px] h-[34px] rounded-full
+            bg-white/12 backdrop-blur
+            border-none text-white text-base
+            cursor-pointer flex items-center justify-center
+          "
         >
           ←
         </button>
-        <h1 className="text-h2 text-text-primary flex-1 truncate">
-          {trip.title}
-        </h1>
+
+        {/* 分享按钮 — 毛玻璃圆形 */}
         <button
           onClick={handleShare}
-          className="w-8 h-8 flex items-center justify-center text-primary"
+          className="
+            absolute top-[14px] right-[14px]
+            w-[34px] h-[34px] rounded-full
+            bg-white/12 backdrop-blur
+            border-none text-white text-base
+            cursor-pointer flex items-center justify-center
+          "
         >
           🔗
         </button>
+
+        {/* 城市名 */}
+        <h1 className="font-serif text-4xl font-black text-white relative">
+          {trip.city}
+        </h1>
+
+        {/* Meta 标签行 */}
+        <div className="flex gap-2 mt-1.5 relative">
+          <span
+            className="
+              px-3 py-1 rounded-full text-[0.72rem] font-semibold
+              bg-white/12 backdrop-blur
+            "
+          >
+            {trip.days} 天行程
+          </span>
+          <span
+            className="
+              px-3 py-1 rounded-full text-[0.72rem] font-semibold
+              bg-white/12 backdrop-blur
+            "
+          >
+            {trip.status === "draft" ? "草稿" : "已确认"}
+          </span>
+        </div>
       </header>
 
       {/* 内容 */}
       <div className="p-4 space-y-4">
-        {/* 概览卡片 */}
-        <Card>
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-3xl">🏙️</span>
-            <div>
-              <p className="text-body text-text-secondary">目的地</p>
-              <p className="text-h3 text-text-primary">{trip.city}</p>
-            </div>
+        {/* 概览统计网格 — 3列 */}
+        <div
+          className="
+            bg-surface-card border border-divider rounded-card
+            p-4 grid grid-cols-3 gap-2.5 text-center
+            animate-fade-up
+          "
+        >
+          <div className="flex flex-col items-center">
+            <span className="text-xl font-bold text-text-primary">
+              {trip.days}
+            </span>
+            <span className="text-[0.68rem] text-ink-tertiary mt-px">
+              天数
+            </span>
           </div>
-          <div className="flex gap-3">
-            <Tag>{trip.days}天行程</Tag>
-            <Tag variant={trip.status === "confirmed" ? "success" : "default"}>
-              {trip.status === "draft" ? "草稿" : "已确认"}
-            </Tag>
+          <div className="flex flex-col items-center">
+            <span className="text-xl font-bold text-text-primary">
+              {allSpots.length}
+            </span>
+            <span className="text-[0.68rem] text-ink-tertiary mt-px">
+              景点
+            </span>
           </div>
-        </Card>
+          <div className="flex flex-col items-center">
+            <span className="text-xl font-bold text-text-primary">
+              ¥{totalPrice}
+            </span>
+            <span className="text-[0.68rem] text-ink-tertiary mt-px">
+              门票合计
+            </span>
+          </div>
+        </div>
 
         {/* 每日行程 — 使用 Timeline 组件 */}
         {Object.entries(trip.itinerary_json).map(([dayKey, spots]) => {

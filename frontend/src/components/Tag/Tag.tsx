@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 
-type TagVariant = "default" | "primary" | "success" | "warning";
+type TagVariant = "default" | "primary" | "success" | "warning" | "teal" | "rust" | "outline" | "fill";
 
 interface TagProps {
   children: ReactNode;
@@ -29,6 +29,23 @@ const variantClasses: Record<TagVariant, { base: string; active: string }> = {
     base: "bg-[#FFF4EB] text-semantic-warning",
     active: "bg-semantic-warning text-text-inverse",
   },
+  // 🆕 Demo V3 新增变体
+  teal: {
+    base: "bg-teal-light text-teal-dark",
+    active: "bg-teal text-white",
+  },
+  rust: {
+    base: "bg-rust-light text-rust",
+    active: "bg-rust text-white",
+  },
+  outline: {
+    base: "bg-transparent border border-warm-border text-ink-secondary",
+    active: "bg-text-primary text-white border-text-primary",
+  },
+  fill: {
+    base: "bg-sand-dark text-text-primary",
+    active: "bg-text-primary text-white",
+  },
 };
 
 export function Tag({
@@ -43,10 +60,10 @@ export function Tag({
   return (
     <span
       className={`
-        inline-flex items-center px-3 h-7 text-caption font-medium
-        rounded-tag transition-colors duration-150
+        inline-flex items-center gap-1 px-3 h-7 text-caption font-medium
+        rounded-tag transition-all duration-200
         ${active ? styles.active : styles.base}
-        ${onClick ? "cursor-pointer active:scale-95" : ""}
+        ${onClick ? "cursor-pointer active:scale-95 hover:shadow-warm-sm" : ""}
         ${className}
       `}
       onClick={onClick}
