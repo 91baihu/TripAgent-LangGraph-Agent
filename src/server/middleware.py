@@ -16,6 +16,37 @@ from collections import defaultdict
 from fastapi import Request, HTTPException
 
 
+# ========== FastAPI 依赖: 获取设备指纹 ==========
+async def get_device_fingerprint(request: Request) -> Optional[str]:
+    """从请求 header 中提取设备指纹（FastAPI 依赖）
+
+    Usage:
+        @router.post("/chat/stream")
+        async def chat(device_id: str = Depends(get_device_fingerprint)): ...
+    """
+    fp = request.headers.get("X-Device-Fingerprint")
+    return fp if fp and fp.strip() else None
+
+
+# ========== 设备指纹中间件 ==========
+class DeviceFingerprintMiddleware:
+    """解析 X-Device-Fingerprint header 并注入到 scope 和 request.state
+
+    前端在每次请求时自动发送设备指纹，后端解析后存入 request.state.device_fingerprint，
+    供下游路由和额度服务使用。
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            headers = dict(scope.get("headers", []))
+            fp = headers.get(b"x-device-fingerprint")
+            scope["device_fingerprint"] = fp.decode() if fp else None
+        await self.app(scope, receive, send)
+
+
 # ========== 请求 ID 中间件 ==========
 class RequestIDMiddleware:
     """注入 X-Request-ID，若请求未携带则自动生成"""

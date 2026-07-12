@@ -26,6 +26,9 @@ Thumbs.db
 # Streamlit
 .streamlit/secrets.toml
 
+# SQLite (local dev)
+*.db
+
 # Pytest
 .pytest_cache/
 
