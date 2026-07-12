@@ -16,7 +16,7 @@ interface ToolStep {
   result?: string;
 }
 
-// 🌤️ 天气数据
+// 🌤️ 天气数据（v2 — 对接和风天气结构化输出）
 export interface WeatherData {
   city: string;
   condition: string;
@@ -24,6 +24,37 @@ export interface WeatherData {
   humidity: string;
   wind: string;
   details: string;
+  // 🆕 v2 扩展字段（来自 WeatherResult JSON）
+  feelsLike?: number;
+  conditionCode?: number;
+  windScale?: number;
+  windDir?: string;
+  windSpeed?: number;
+  visibility?: number;
+  pressure?: number;
+  uvIndex?: number;
+  aqi?: number;
+  aqiLevel?: string;
+  hourly?: Array<{
+    time: string;
+    temp: number;
+    condition_code: number;
+    pop: number;
+    wind_scale: number;
+  }>;
+  daily?: Array<{
+    date: string;
+    sunrise: string;
+    sunset: string;
+    temp_high: number;
+    temp_low: number;
+    condition_day: string;
+    condition_code_day: number;
+    pop: number;
+    uv_index: number;
+  }>;
+  lifeIndex?: Record<string, string>;
+  source?: string;
 }
 
 // 🆕 可视化数据类型

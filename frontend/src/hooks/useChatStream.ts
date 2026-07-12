@@ -6,23 +6,73 @@ import { endpoints } from "../services/endpoints";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
-/** 从 get_weather 工具返回的 Markdown 文本中解析天气数据 */
+/** 从 get_weather 工具返回的 Markdown 文本中解析天气数据
+ *
+ *  v2 解析策略（参见 docs/09-天气API选型与调用组件方案.md）：
+ *  1. 优先解析 embedded JSON（`<!-- WEATHER_JSON ... -->`）—— 精确、零歧义
+ *  2. Fallback：正则解析 Markdown 表格（兼容旧版 wttr.in 纯文本格式）
+ */
 function parseWeatherFromText(text: string): WeatherData | null {
   try {
-    // 尝试匹配结构化天气数据
-    const cityMatch = text.match(/([^\s]+)\s*天气/);
-    const tempMatch = text.match(/([+-]?\d+)\s*°C/);
-    const condMatch = text.match(/(?:天气[：:]?\s*)([^\n]+)/);
-    const humMatch = text.match(/湿度[：:]?\s*(\d+%|[^\s]+)/);
-    const windMatch = text.match(/风[：:]?\s*([^\n]+)/);
+    // ─── 策略 1：解析 embedded JSON（v2 新格式） ───
+    const jsonMatch = text.match(/<!-- WEATHER_JSON\n([\s\S]+?)\n-->/);
+    if (jsonMatch) {
+      try {
+        const w = JSON.parse(jsonMatch[1]);
+        return {
+          city: w.city || "未知",
+          condition: w.condition || "未知",
+          temperature: w.temp != null ? `${w.temp}°C` : "--",
+          humidity: w.humidity != null ? `${w.humidity}%` : "--",
+          wind: w.wind_dir
+            ? `${w.wind_dir} ${w.wind_scale}级`
+            : w.wind_speed
+              ? `${w.wind_speed}km/h`
+              : "--",
+          details: text,
+          // 🆕 v2 扩展字段
+          feelsLike: w.feels_like,
+          conditionCode: w.condition_code,
+          windScale: w.wind_scale,
+          windDir: w.wind_dir,
+          windSpeed: w.wind_speed,
+          visibility: w.visibility,
+          pressure: w.pressure,
+          uvIndex: w.uv_index,
+          aqi: w.aqi,
+          aqiLevel: w.aqi_level,
+          hourly: w.hourly,
+          daily: w.daily,
+          lifeIndex: w.life_index,
+          source: w.source,
+        };
+      } catch {
+        // JSON 解析失败 → 降级到正则
+      }
+    }
+
+    // ─── 策略 2：正则解析 Markdown（旧版兼容） ───
+    // 匹配 Markdown 表格行：| 🌡️ 当前温度 | **32°C**（体感 35°C） |
+    const cityMatch = text.match(/##\s*([^\s]+)\s*天气/);
+    const tempMatch = text.match(/当前温度\s*\|\s*\*{0,2}([+-]?\d+)\s*°C/);
+    const feelsMatch = text.match(/体感\s*([+-]?\d+)\s*°C/);
+    const condMatch = text.match(/天气状况\s*\|\s*([^\n|]+)/);
+    const humMatch = text.match(/湿度\s*\|\s*\*{0,2}(\d+)\s*%/);
+    const windMatch = text.match(/风力\s*\|\s*([^\n|]+)/);
+    const aqiMatch = text.match(/空气质量\s*\|\s*AQI\s*(\d+)/);
+
+    if (!tempMatch && !condMatch) return null;
 
     return {
       city: cityMatch?.[1] || "未知",
       condition: condMatch?.[1]?.trim() || "未知",
       temperature: tempMatch ? `${tempMatch[1]}°C` : "--",
-      humidity: humMatch?.[1] || "--",
-      wind: windMatch?.[1] || "--",
+      humidity: humMatch?.[1] ? `${humMatch[1]}%` : "--",
+      wind: windMatch?.[1]?.trim() || "--",
       details: text,
+      // 尽可能从 Markdown 表格提取扩展字段
+      feelsLike: feelsMatch ? parseInt(feelsMatch[1], 10) : undefined,
+      aqi: aqiMatch ? parseInt(aqiMatch[1], 10) : undefined,
     };
   } catch {
     return null;
