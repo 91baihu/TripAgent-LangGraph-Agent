@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
+from typing import Optional
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,6 +21,8 @@ from ..auth import (
 )
 from ..database import get_db
 from ..models import User
+from ..services.credit_service import credit_service
+from ..services.session_service import session_service
 
 router = APIRouter(prefix="/auth", tags=["认证"])
 
@@ -83,6 +86,14 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(user)
 
+    # 阶段二：新用户注册赠送 10 次试用额度
+    try:
+        await credit_service.grant_trial_credits(db, user.id)
+        await db.commit()
+    except Exception:
+        # 赠送失败不影响注册流程
+        pass
+
     access_token = create_access_token(user.id, user.role)
     refresh_token = create_refresh_token(user.id)
 
@@ -94,8 +105,12 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
-    """用户登录"""
+async def login(
+    req: LoginRequest,
+    db: AsyncSession = Depends(get_db),
+    x_device_fingerprint: Optional[str] = Header(None, alias="X-Device-Fingerprint"),
+):
+    """用户登录 — 登录后自动迁移设备上的游客会话"""
     user = await _get_user_by_email(db, req.email)
     if not user:
         raise HTTPException(
@@ -108,6 +123,16 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="邮箱或密码错误",
         )
+
+    # 阶段三：登录后迁移游客设备会话到用户账户
+    if x_device_fingerprint:
+        try:
+            await session_service.claim_device_sessions(
+                db, user.id, x_device_fingerprint
+            )
+            await db.commit()
+        except Exception:
+            pass  # 迁移失败不影响登录
 
     access_token = create_access_token(user.id, user.role)
     refresh_token = create_refresh_token(user.id)

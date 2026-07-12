@@ -9,8 +9,9 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .routes import chat, trips, tools, auth
+from .routes import chat, trips, tools, auth, credits, sessions, export, billing
 from .logging import logger
+from .middleware import DeviceFingerprintMiddleware
 
 
 # ========== 应用生命周期 ==========
@@ -66,6 +67,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # 设备指纹中间件（解析 X-Device-Fingerprint header）
+    app.add_middleware(DeviceFingerprintMiddleware)
+
     # 请求 ID + 访问日志中间件
     @app.middleware("http")
     async def request_middleware(request: Request, call_next):
@@ -107,6 +111,10 @@ def create_app() -> FastAPI:
     app.include_router(trips.router, prefix="/api/v1", tags=["行程"])
     app.include_router(tools.router, prefix="/api/v1", tags=["工具"])
     app.include_router(auth.router, prefix="/api/v1", tags=["认证"])
+    app.include_router(credits.router, prefix="/api/v1", tags=["额度"])
+    app.include_router(sessions.router, prefix="/api/v1", tags=["会话"])
+    app.include_router(export.router, prefix="/api/v1", tags=["导出"])
+    app.include_router(billing.router, prefix="/api/v1", tags=["付费"])
 
     # 健康检查
     @app.get("/health")
