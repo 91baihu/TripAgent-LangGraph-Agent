@@ -94,8 +94,8 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
         # 赠送失败不影响注册流程
         pass
 
-    access_token = create_access_token(user.id, user.role)
-    refresh_token = create_refresh_token(user.id)
+    access_token = create_access_token(str(user.id), user.role)
+    refresh_token = create_refresh_token(str(user.id))
 
     return TokenResponse(
         access_token=access_token,
@@ -134,8 +134,8 @@ async def login(
         except Exception:
             pass  # 迁移失败不影响登录
 
-    access_token = create_access_token(user.id, user.role)
-    refresh_token = create_refresh_token(user.id)
+    access_token = create_access_token(str(user.id), user.role)
+    refresh_token = create_refresh_token(str(user.id))
 
     return TokenResponse(
         access_token=access_token,

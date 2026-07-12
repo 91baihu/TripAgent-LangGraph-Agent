@@ -157,6 +157,18 @@ class CreditService:
                     message="用户不存在",
                 )
 
+            # 管理员：无限额度
+            if user.role == "admin":
+                return QuotaResult(
+                    has_quota=True,
+                    remaining=999999,
+                    total=999999,
+                    is_guest=False,
+                    quota_type="account",
+                    plan_name="管理员（全部权限）",
+                    status="normal",
+                )
+
             # 检查是否需要重置月度配额
             await self._maybe_reset_monthly_quota(db, user)
 
@@ -277,6 +289,10 @@ class CreditService:
             user = user_result.scalar_one_or_none()
             if user is None:
                 return False
+
+            # 管理员不扣额度
+            if user.role == "admin":
+                return True
 
             # 检查并重置月度配额
             await self._maybe_reset_monthly_quota(db, user)

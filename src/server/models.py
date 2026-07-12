@@ -30,7 +30,7 @@ class UniversalUUID(TypeDecorator):
     def load_dialect_impl(self, dialect):
         if dialect.name == "postgresql":
             from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-            return dialect.type_descriptor(PG_UniversalUUID())
+            return dialect.type_descriptor(PG_UUID())
         else:
             return dialect.type_descriptor(String(36))
 
