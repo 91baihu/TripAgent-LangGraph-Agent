@@ -65,44 +65,245 @@
 
 ## 🚀 快速开始
 
-### Docker 部署（推荐）
+### 0. 前置条件
+
+| 软件 | 最低版本 | 用途 | 必须 |
+|------|---------|------|------|
+| Python | 3.11+ | 后端运行环境 | ✅ |
+| Node.js | 18+ | 前端构建 | ✅（本地跑前端时需要） |
+| Git | 任意 | 克隆代码 | ✅ |
+| Docker Desktop | 24+ | 容器化部署 | ⬜（方式一/二需要） |
+| DeepSeek API Key | — | LLM 调用 | ✅ [获取地址](https://platform.deepseek.com) |
+
+---
+
+### 方式一：Docker 全部托管（最简单，3 步启动）
+
+> 适用：不想手动装 Python/Node、需要完整 PostgreSQL+Redis+Nginx 环境。
+
+#### 步骤 1：安装 Docker Desktop
+
+前往 [docker.com](https://www.docker.com/products/docker-desktop) 下载安装。
+
+- **Windows**：安装后确保 WSL2 已启用，Docker Desktop 右下角图标变绿即为就绪。
+- **macOS**：拖入 Applications，Docker Desktop 菜单栏图标变绿即为就绪。
+- **Linux**：`curl -fsSL https://get.docker.com | sh && sudo systemctl enable --now docker`
+
+验证安装：
+
+```bash
+docker --version
+docker ps          # 不报错即可
+```
+
+#### 步骤 2：配置环境变量
 
 ```bash
 git clone <your-repo-url> && cd trip-agent
-cp config/.env.example config/dev.env
-# 编辑 config/dev.env，填入 DEEPSEEK_API_KEY
 
-make up-dev
-# API 文档:    http://localhost:8000/api/docs
-# Streamlit:  http://localhost:8501
+# 复制并编辑配置
+cp config/.env.example config/dev.env
 ```
 
-### 本地开发
+编辑 `config/dev.env`，**只需填一行**，其他保持默认：
+
+```ini
+DEEPSEEK_API_KEY=sk-你的真实Key
+```
+
+#### 步骤 3：启动服务
 
 ```bash
-pip install -r requirements.txt
-cp config/.env.example .env
-# 编辑 .env，填入 DEEPSEEK_API_KEY=sk-your-key-here
+# 开发环境（API + PostgreSQL + Redis + Streamlit 管理面板）
+make up-dev
 
-# === SQLite 模式（无需 PostgreSQL/Redis，推荐开发使用）===
-cd src && USE_SQLITE=1 uvicorn server.main:app --reload --port 8001
+# 或者只启动核心服务（API + PostgreSQL + Redis）
+make up
 
-# === 完整模式（需先启动 PostgreSQL + Redis）===
-cd src && uvicorn server.main:app --reload --port 8000
-
-# Streamlit 原型
-cd src && streamlit run main.py
+# 生产环境（含 Nginx 反向代理）
+make up-prod
 ```
 
-### React 前端
+**启动后的访问地址：**
+
+| 服务 | 地址 |
+|------|------|
+| API 文档 (Swagger) | http://localhost:8000/api/docs |
+| Streamlit 原型 UI | http://localhost:8501（仅 `make up-dev`） |
+| React 前端 | 需单独 `cd frontend && npm run dev`，或 Nginx 静态托管 |
+| PostgreSQL | `localhost:5432`，用户 `tripagent` |
+| Redis | `localhost:6379` |
+
+> Docker 镜像首次拉取需要几分钟（约 300MB），后续启动秒级完成。
+
+---
+
+### 方式二：混合模式 — Docker 数据库 + 本地跑后端（推荐开发）
+
+> 适用：想用 PostgreSQL/Redis 但需要频繁改代码 & 热重载。
+
+#### 步骤 1：安装 Docker Desktop 并启动数据库
+
+```bash
+# 配置 .env（项目根目录）
+cp config/.env.example .env
+# 编辑 .env，填入 DEEPSEEK_API_KEY
+```
+
+`.env` 关键配置（本地连 Docker 数据库时 `POSTGRES_HOST=localhost`）：
+
+```ini
+DEEPSEEK_API_KEY=sk-你的真实Key
+POSTGRES_USER=tripagent
+POSTGRES_PASSWORD=tripagent_dev
+POSTGRES_DB=tripagent
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+REDIS_URL=redis://localhost:6379/0
+```
+
+```bash
+# 只启动数据库和缓存
+docker-compose --env-file .env up -d postgres redis
+```
+
+验证数据库就绪：
+
+```bash
+docker ps
+# tripagent-db     ... Up ... (healthy)
+# tripagent-redis  ... Up ... (healthy)
+```
+
+#### 步骤 2：启动后端
+
+```bash
+# 创建虚拟环境
+python -m venv .venv && .venv\Scripts\activate   # Windows
+python -m venv .venv && source .venv/bin/activate # macOS/Linux
+
+# 安装 Python 依赖
+pip install -r requirements.txt
+
+# 启动 FastAPI（热重载模式）
+cd src
+uvicorn server.main:app --reload --port 8000
+```
+
+#### 步骤 3：启动前端
+
+另开一个终端：
 
 ```bash
 cd frontend
 npm install
-npm run dev     # http://localhost:5173（API 代理到 :8001）
+npm run dev        # http://localhost:5173
 ```
 
-> **开发模式**：`USE_SQLITE=1` 使用 SQLite 数据库，无需 Docker。前端代理端口见 `frontend/vite.config.ts`。
+> ⚠️ 前端 Vite 代理端口需和后台一致。后端跑 `8000` → `vite.config.ts` 的 `target` 写 `http://localhost:8000`。
+
+---
+
+### 方式三：纯本地 SQLite 模式（零依赖，最快上手）
+
+> 适用：只想快速体验、不装 Docker、不需要数据库和缓存。
+
+```bash
+# 1. 配置
+cp config/.env.example .env
+# 编辑 .env，填入 DEEPSEEK_API_KEY=sk-你的真实Key
+
+# 2. 安装依赖
+python -m venv .venv && .venv\Scripts\activate  # Windows
+pip install -r requirements.txt aiosqlite
+
+# 3. 启动后端（SQLite 模式）
+cd src
+
+# Windows PowerShell:
+$env:USE_SQLITE="1"; uvicorn server.main:app --reload --port 8001
+
+# macOS / Linux / Git Bash:
+USE_SQLITE=1 uvicorn server.main:app --reload --port 8001
+
+# 4. 另开终端启动前端
+cd frontend
+npm install && npm run dev
+```
+
+SQLite 数据库文件 `tripagent_dev.db` 会自动创建在项目根目录。
+
+---
+
+### 方式四：Streamlit 原型（单文件，无需前后端分离）
+
+```bash
+pip install -r requirements.txt
+cd src
+streamlit run main.py  # http://localhost:8501
+```
+
+> 此方式仅体验 Agent 推理流程，不含用户体系、商业化、导出等完整功能。
+
+---
+
+### 三种模式对比
+
+| 维度 | 方式一 Docker 全托管 | 方式二 混合模式 | 方式三 SQLite |
+|------|-------------------|---------------|-------------|
+| 需要安装 | Docker | Docker + Python + Node | Python + Node |
+| 数据库 | PostgreSQL | PostgreSQL | SQLite（单文件） |
+| 缓存 | Redis | Redis | 内存 dict 降级 |
+| 热重载 | ✅ Docker volume | ✅ uvicorn --reload | ✅ uvicorn --reload |
+| 生产一致性 | ⭐⭐⭐ 完全一致 | ⭐⭐ 数据库一致 | ⭐ 仅逻辑一致 |
+| 启动时间 | 3-5 分钟（首次） | 1-2 分钟 | 10 秒 |
+| 推荐场景 | 验证部署、演示 | 日常开发 | 快速体验、前端调试 |
+
+---
+
+### 🐳 Docker 常用命令速查
+
+```bash
+# ===== 启动 / 停止 =====
+make up              # 启动核心服务（api + db + redis）
+make up-dev          # 启动开发环境（含 Streamlit :8501）
+make up-prod         # 启动生产环境（含 Nginx :80）
+make down            # 停止全部服务
+make down-clean      # 停止服务并清除数据卷
+
+# ===== 日志 =====
+make logs            # 所有服务日志
+make logs-api        # 仅 API 日志
+docker logs tripagent-db    # 仅看数据库日志
+
+# ===== 构建 & 调试 =====
+make build           # 重新构建镜像（依赖变更后）
+make test            # 在容器中运行单元测试
+make shell           # 进入 API 容器 bash
+make db-reset        # 清空数据库重新初始化
+
+# ===== 数据库直连 =====
+docker exec -it tripagent-db psql -U tripagent -d tripagent
+# 常用 SQL：
+#   \dt              — 列出全部表
+#   SELECT * FROM users;
+#   \q               — 退出
+
+# ===== 清理 =====
+make clean           # 删除所有容器、镜像、数据卷
+docker system prune -a  # 清理 Docker 全局缓存
+```
+
+### 🛠️ 常见问题排查
+
+| 问题 | 原因 | 解决 |
+|------|------|------|
+| `port 8000 already in use` | 端口被占用 | 改端口 `--port 8002`，同步改 `vite.config.ts` proxy |
+| `database_init_failed` | PostgreSQL 未就绪 | `docker ps` 确认容器 healthy，等 10 秒重试 |
+| `could not translate host name "postgres"` | 本地跑后端但用了 Docker 主机名 | `.env` 中 `POSTGRES_HOST=localhost` |
+| 前端页面空白 / API 404 | 代理端口不匹配 | 检查 `vite.config.ts` target 端口与后台一致 |
+| Docker 启动慢/卡住 | 国内网络拉镜像慢 | 配置 Docker 镜像加速器（阿里云/中科大） |
+| `ModuleNotFoundError: asyncpg` | 缺 PostgreSQL 驱动 | `pip install asyncpg`（PostgreSQL 模式需要） |
 
 ## 🧪 测试
 
