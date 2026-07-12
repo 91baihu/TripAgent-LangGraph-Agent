@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .routes import chat, trips, tools, auth, credits, sessions, export, billing
+from .routes import chat, trips, tools, auth, credits, sessions, export, billing, admin
 from .logging import logger
 from .middleware import DeviceFingerprintMiddleware
 
@@ -115,6 +115,7 @@ def create_app() -> FastAPI:
     app.include_router(sessions.router, prefix="/api/v1", tags=["会话"])
     app.include_router(export.router, prefix="/api/v1", tags=["导出"])
     app.include_router(billing.router, prefix="/api/v1", tags=["付费"])
+    app.include_router(admin.router, prefix="/api/v1", tags=["管理员"])
 
     # 健康检查
     @app.get("/health")

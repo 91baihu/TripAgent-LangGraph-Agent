@@ -67,6 +67,25 @@ export function MePage() {
           </div>
         </div>
 
+        {/* 管理员入口 */}
+        {user?.role === "admin" && (
+          <div className="bg-white border border-warm-border2 rounded-card-lg p-4">
+            <h3 className="text-sm font-semibold text-ink mb-3">🛡️ 管理员</h3>
+            <button
+              onClick={() => navigate("/admin")}
+              className="
+                w-full h-[44px] rounded-button
+                bg-ink text-white
+                font-semibold text-sm
+                hover:bg-ink/85 active:scale-[0.97]
+                transition-all cursor-pointer
+              "
+            >
+              ⚙️ 进入管理面板
+            </button>
+          </div>
+        )}
+
         {/* 偏好设置占位 */}
         <div className="bg-white border border-warm-border2 rounded-card-lg p-4">
           <h3 className="text-sm font-semibold text-ink mb-3">⚙️ 偏好设置</h3>
