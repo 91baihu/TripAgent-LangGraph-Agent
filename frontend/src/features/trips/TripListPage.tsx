@@ -62,19 +62,21 @@ export function TripListPage() {
 
   if (loading) {
     return (
-      <div className="p-4 space-y-3">
+      <div className="p-4 max-w-5xl mx-auto animate-fade-in">
         <h1 className="font-serif font-black text-2xl text-text-primary mb-4">
           我的行程
         </h1>
-        {[1, 2, 3].map((i) => (
-          <TripCardSkeleton key={i} />
-        ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <TripCardSkeleton key={i} />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4">
+    <div className="p-4 max-w-5xl mx-auto animate-fade-in">
       <h1 className="font-serif font-black text-2xl text-text-primary mb-4">
         我的行程
       </h1>
@@ -88,7 +90,7 @@ export function TripListPage() {
           onAction={() => navigate("/")}
         />
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {trips.map((trip, i) => {
             const allSpots = trip.itinerary_json
               ? Object.values(trip.itinerary_json).flat()
@@ -104,17 +106,19 @@ export function TripListPage() {
                 <Card
                   hover
                   padding={false}
-                  className="overflow-hidden"
+                  className="overflow-hidden h-full"
                   onClick={() => navigate(`/trips/${trip.id}`)}
                 >
-                {/* Hero 渐变区域 */}
+                {/* Hero 渐变区域 — Demo 三色渐变 */}
                 <div
                   className="
                     relative h-[110px] overflow-hidden
-                    bg-gradient-to-br from-sand-dark to-sand-bg
                     flex items-center justify-center
                   "
-                  style={{ opacity: 0.7 }}
+                  style={{
+                    background: "linear-gradient(135deg, #E8E0D5, #F0EAE0, #D5CFC6)",
+                    opacity: 0.7,
+                  }}
                 >
                   <span className="text-[2.8rem] leading-none select-none">
                     {getCityEmoji(trip.city)}
@@ -124,9 +128,8 @@ export function TripListPage() {
                   <div className="absolute top-2.5 right-2.5">
                     <Tag
                       variant={
-                        trip.status === "confirmed" ? "success" : "outline"
+                        trip.status === "confirmed" ? "teal" : "outline"
                       }
-                      active={trip.status === "confirmed"}
                     >
                       {trip.status === "draft" ? "草稿" : "已确认"}
                     </Tag>

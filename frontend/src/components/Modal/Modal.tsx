@@ -28,7 +28,7 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
       {/* 遮罩 */}
       <div
-        className="absolute inset-0 bg-black/40 animate-fadeIn"
+        className="absolute inset-0 bg-black/40 animate-fade-in"
         onClick={onClose}
       />
 
@@ -36,7 +36,7 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
       <div
         className="
           relative w-full max-w-sm bg-surface-card rounded-modal
-          shadow-modal animate-bubbleIn overflow-hidden
+          shadow-modal animate-scale-in overflow-hidden
         "
       >
         {title && (

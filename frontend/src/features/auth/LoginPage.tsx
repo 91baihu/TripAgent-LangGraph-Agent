@@ -1,7 +1,7 @@
 /** 登录页 — QQ 极简风格 */
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Input } from "../../components/Input/Input";
 import { Button } from "../../components/Button/Button";
 import { useAuthStore } from "../../stores/authStore";
@@ -14,6 +14,10 @@ export function LoginPage() {
   const [nickname, setNickname] = useState("");
   const { login, register, isLoading } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // 登录成功后回跳原页面
+  const from = (location.state as { from?: string })?.from || "/";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +30,7 @@ export function LoginPage() {
         await login(email, password);
         showToast("登录成功！");
       }
-      navigate("/");
+      navigate(from);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "操作失败";
       showToast(msg, "error");
@@ -34,7 +38,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-dvh px-6 bg-white">
+    <div className="flex flex-col items-center justify-center min-h-dvh px-6 auth-bg-gradient animate-gradient-shift">
       {/* Logo */}
       <div
         className="

@@ -12,7 +12,7 @@ export function SearchProgress() {
       {/* 步骤描述 */}
       <div className="flex items-center justify-between mb-1">
         <span className="text-small text-text-secondary flex items-center gap-1.5">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-teal animate-pulse-ring" />
           {progressPhase}
         </span>
         <span className="text-small text-text-tertiary tabular-nums">
@@ -28,7 +28,7 @@ export function SearchProgress() {
             width: `${progressPercent}%`,
             background:
               progressPercent < 100
-                ? "linear-gradient(90deg, #12B7F5, #0E9FD6, #12B7F5)"
+                ? "linear-gradient(90deg, #0D9488, #0F766E, #0D9488)"
                 : "#07C160",
             backgroundSize: progressPercent < 100 ? "200% 100%" : undefined,
             animation:

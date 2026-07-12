@@ -62,10 +62,13 @@ export function TripDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-4 space-y-3">
-        <Skeleton width="60%" height={24} />
-        <Skeleton height={120} />
-        <Skeleton height={80} />
+      <div className="min-h-dvh bg-surface-page animate-fade-in">
+        <div className="max-w-2xl mx-auto p-4 space-y-4">
+          <Skeleton height={200} rounded="16px" />
+          <Skeleton width="60%" height={24} />
+          <Skeleton height={120} rounded="12px" />
+          <Skeleton height={80} rounded="12px" />
+        </div>
       </div>
     );
   }
@@ -79,13 +82,14 @@ export function TripDetailPage() {
   );
 
   return (
-    <div className="min-h-dvh bg-surface-page">
-      {/* 深色渐变 Hero */}
+    <div className="min-h-dvh bg-surface-page animate-fade-in">
+      {/* 深色渐变 Hero — 桌面端更高 */}
       <header
         className="
-          relative h-[200px] overflow-hidden flex-shrink-0
+          relative overflow-hidden flex-shrink-0
           bg-gradient-to-br from-ink to-ink-secondary
           flex flex-col justify-end p-[18px] text-white
+          h-[200px] md:h-[260px]
         "
       >
         {/* 径向光晕叠加 */}
@@ -150,8 +154,8 @@ export function TripDetailPage() {
         </div>
       </header>
 
-      {/* 内容 */}
-      <div className="p-4 space-y-4">
+      {/* 内容 — 桌面端居中限宽 */}
+      <div className="max-w-2xl mx-auto p-4 space-y-4 md:space-y-6 md:py-6">
         {/* 概览统计网格 — 3列 */}
         <div
           className="

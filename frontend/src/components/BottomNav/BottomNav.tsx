@@ -1,6 +1,7 @@
-/** QQ 风格底部导航栏 — 仅移动端显示 */
+/** QQ 风格底部导航栏 — 仅移动端显示，已登录时"登录"变为"账户" */
 
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAuthStore } from "../../stores/authStore";
 
 interface NavItem {
   path: string;
@@ -8,15 +9,24 @@ interface NavItem {
   icon: string;
 }
 
-const navItems: NavItem[] = [
+const loggedOutItems: NavItem[] = [
   { path: "/", label: "首页", icon: "🏠" },
   { path: "/trips", label: "行程", icon: "✈️" },
   { path: "/login", label: "登录", icon: "👤" },
 ];
 
+const loggedInItems: NavItem[] = [
+  { path: "/", label: "首页", icon: "🏠" },
+  { path: "/trips", label: "行程", icon: "✈️" },
+  { path: "/me", label: "账户", icon: "👤" },
+];
+
 export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
+
+  const navItems = isAuthenticated ? loggedInItems : loggedOutItems;
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";

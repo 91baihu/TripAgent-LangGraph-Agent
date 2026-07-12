@@ -33,16 +33,21 @@ export function Skeleton({
   );
 }
 
-/** 行程卡片骨架屏 */
+/** 行程卡片骨架屏 — 对齐 Demo V3 卡片结构：Hero 渐变区 + 正文 */
 export function TripCardSkeleton() {
   return (
-    <div className="bg-surface-card rounded-card-lg border border-divider p-4 space-y-3">
-      <Skeleton width="60%" height={20} />
-      <Skeleton width="40%" height={14} />
-      <div className="flex gap-2">
-        <Skeleton width={80} height={28} rounded="6px" />
-        <Skeleton width={80} height={28} rounded="6px" />
-        <Skeleton width={80} height={28} rounded="6px" />
+    <div className="bg-surface-card rounded-card-lg border border-warm-border2 overflow-hidden">
+      {/* Hero 骨架 — 对应 Demo .trip-card-hero 110px */}
+      <div className="h-[110px] skeleton-shimmer opacity-70" />
+      {/* 正文骨架 */}
+      <div className="p-[14px] space-y-3">
+        <Skeleton width="60%" height={20} />
+        <Skeleton width="40%" height={14} />
+        <div className="flex gap-2">
+          <Skeleton width={80} height={28} rounded="100px" />
+          <Skeleton width={80} height={28} rounded="100px" />
+          <Skeleton width={80} height={28} rounded="100px" />
+        </div>
       </div>
     </div>
   );

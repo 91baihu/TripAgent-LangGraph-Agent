@@ -32,13 +32,23 @@ export function showToast(message: string, type: ToastType = "info") {
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [exitingIds, setExitingIds] = useState<Set<number>>(new Set());
 
   const show = useCallback((message: string, type: ToastType = "info") => {
     const id = ++toastId;
     setToasts((prev) => [...prev.slice(-4), { id, message, type }]);
+    // 2s 后触发退出动画，2.2s 后移除 DOM
+    setTimeout(() => {
+      setExitingIds((prev) => new Set(prev).add(id));
+    }, 2000);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 2500);
+      setExitingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }, 2200);
   }, []);
 
   useEffect(() => {
@@ -55,7 +65,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className="pointer-events-auto animate-fade-up"
+            className={`pointer-events-auto ${exitingIds.has(toast.id) ? "animate-fade-out" : "animate-fade-up"}`}
           >
             <ToastItem message={toast.message} type={toast.type} />
           </div>

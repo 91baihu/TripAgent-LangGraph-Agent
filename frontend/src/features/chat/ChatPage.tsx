@@ -2,13 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Bubble, ThinkingBubble } from "../../components/Bubble/Bubble";
-import { Tag } from "../../components/Tag/Tag";
 import { useChatStore } from "../../stores/chatStore";
 import { useChatStream } from "../../hooks/useChatStream";
 import { ToolStepChip, StepsSummary } from "./ToolStepCard";
 import { VisualizationPanel } from "./VisualizationPanel";
 import { ViewSwitcher, type MobileView } from "../../components/ViewSwitcher/ViewSwitcher";
 import { SearchProgress } from "./SearchProgress";
+import { UserMenu } from "../../components/UserMenu/UserMenu";
 
 const QUICK_SUGGESTIONS = [
   { emoji: "🏖️", label: "北京3日亲子游" },
@@ -27,12 +27,29 @@ export function ChatPage() {
   const { sendMessage, cancelStream } = useChatStream();
   const [input, setInput] = useState("");
   const [mobileView, setMobileView] = useState<MobileView>("chat");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 自动滚到底部
+  // 自动滚到底部 — 流式时即时滚动防抖动，普通消息平滑滚动
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastUserMsgRef = useRef(false);
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamingReply, toolSteps]);
+    const el = messagesEndRef.current;
+    if (!el) return;
+
+    const lastMsg = messages[messages.length - 1];
+    const isNewUserMsg = lastMsg?.role === "user" && !lastUserMsgRef.current;
+    lastUserMsgRef.current = lastMsg?.role === "user";
+
+    if (isStreaming) {
+      // 流式中：即时滚动，避免 smooth 堆积导致抖动
+      el.scrollIntoView({ behavior: "auto" });
+    } else if (isNewUserMsg) {
+      // 新用户消息：平滑滚动到输入区
+      el.scrollIntoView({ behavior: "smooth" });
+    } else {
+      el.scrollIntoView({ behavior: "auto" });
+    }
+  }, [messages, streamingReply, toolSteps, isStreaming]);
 
   const handleSend = () => {
     const trimmed = input.trim();
@@ -209,9 +226,7 @@ export function ChatPage() {
         "
       >
         <h1 className="font-serif text-lg font-black text-text-primary">TripAgent</h1>
-        <div className="w-[30px] h-[30px] rounded-full bg-text-primary flex items-center justify-center text-white text-[11px] font-bold">
-          T
-        </div>
+        <UserMenu />
       </header>
 
       {/* ===== 桌面端：左右分屏 ===== */}

@@ -99,11 +99,13 @@ export function VisualizationPanel({
         </div>
       )}
 
-      {/* 面板内容 */}
-      <div className="flex-1 min-h-0 flex flex-col">
-        {activeTab === "map" && <MapPanel />}
-        {activeTab === "rankings" && <RankingsPanel />}
-        {activeTab === "trace" && <ReasoningTrace />}
+      {/* 面板内容 — 切换时 fade-in */}
+      <div className="flex-1 min-h-0 flex flex-col" key={activeTab}>
+        <div className="animate-fade-in flex-1 flex flex-col min-h-0">
+          {activeTab === "map" && <MapPanel />}
+          {activeTab === "rankings" && <RankingsPanel />}
+          {activeTab === "trace" && <ReasoningTrace />}
+        </div>
       </div>
     </div>
   );

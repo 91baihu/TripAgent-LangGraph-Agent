@@ -40,7 +40,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               this.setState({ hasError: false, error: null });
               window.location.href = "/";
             }}
-            className="px-6 py-2 bg-primary text-white rounded-button hover:bg-primary-hover transition-colors"
+            className="px-6 py-2 bg-ink text-white rounded-button hover:bg-ink-secondary active:scale-[0.97] transition-all"
           >
             返回首页
           </button>

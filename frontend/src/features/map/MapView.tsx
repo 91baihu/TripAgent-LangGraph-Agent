@@ -121,7 +121,7 @@ export function MapView() {
   const amapKey = import.meta.env.VITE_AMAP_JS_KEY;
 
   return (
-    <div className="flex flex-col h-dvh bg-surface-page">
+    <div className="flex flex-col h-dvh bg-surface-page animate-fade-in">
       {/* Header — h-14, bg-surface-card, border-b */}
       <header className="flex-shrink-0 h-14 bg-surface-card border-b border-divider flex items-center gap-3 px-4">
         <button
@@ -132,7 +132,7 @@ export function MapView() {
         </button>
         <h1 className="text-h2 text-text-primary flex-1">行程地图</h1>
         {/* 天气浮层 */}
-        <Tag variant="primary">☀️ 28°C 晴</Tag>
+        <Tag variant="outline">☀️ 28°C 晴</Tag>
       </header>
 
       {/* 地图容器 — flex-1 填满剩余空间 */}
@@ -168,7 +168,7 @@ export function MapView() {
           {dayData.map((day, i) => (
             <Tag
               key={day.label}
-              variant="primary"
+              variant="outline"
               active={i === activeDay}
               onClick={() => setActiveDay(i)}
             >
@@ -185,12 +185,12 @@ export function MapView() {
             {currentDay.spots.map((spot, i) => (
               <div
                 key={i}
-                className="relative pl-8 border-l-2 border-primary/30 pb-4 last:pb-0"
+                className="relative pl-8 border-l-[1.5px] border-warm-border pb-4 last:pb-0"
               >
                 {/* 时间线节点圆点 */}
                 <div
-                  className="absolute -left-[calc(2rem+3px)] w-[14px] h-[14px]
-                    rounded-full bg-primary border-2 border-white shadow-sm top-1"
+                  className="absolute -left-[calc(2rem+5px)] w-[10px] h-[10px]
+                    rounded-full bg-ink border-2 border-white top-1"
                 />
                 <p className="text-caption text-text-secondary">{spot.time}</p>
                 <p className="text-body text-text-primary font-medium">
@@ -198,10 +198,10 @@ export function MapView() {
                 </p>
                 <div className="flex items-center gap-2 mt-1">
                   <Tag>{spot.duration}</Tag>
-                  {spot.price > 0 && <Tag variant="success">¥{spot.price}</Tag>}
+                  {spot.price > 0 && <Tag variant="teal">¥{spot.price}</Tag>}
                 </div>
                 {spot.transport && (
-                  <p className="text-small text-primary mt-1">
+                  <p className="text-small text-teal-dark font-semibold mt-1">
                     {spot.transport === "walking" ? "🚶" : "🚗"} →{" "}
                     {spot.nextSpot}{" "}
                     {spot.nextDistance && (

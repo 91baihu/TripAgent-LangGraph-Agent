@@ -154,6 +154,96 @@
   }
 }
 
+/* ===== 天气主题渐变背景 ===== */
+.weather-bg-sunny {
+  background: linear-gradient(135deg, #FFD6A5 0%, #FFAB76 40%, #FFF0E0 100%);
+}
+.weather-bg-cloudy {
+  background: linear-gradient(135deg, #D5CFC6 0%, #E8E0D5 40%, #F5F0E8 100%);
+}
+.weather-bg-rainy {
+  background: linear-gradient(135deg, #A0C4D8 0%, #B8D0E0 40%, #E8F0F8 100%);
+}
+.weather-bg-snowy {
+  background: linear-gradient(135deg, #D8E8F8 0%, #E8F0F8 40%, #F5F8FC 100%);
+}
+.weather-bg-stormy {
+  background: linear-gradient(135deg, #5A6578 0%, #7B8A9A 40%, #A0B0C0 100%);
+}
+.weather-bg-foggy {
+  background: linear-gradient(135deg, #E8E4DC 0%, #F0EAE0 40%, #F8F4F0 100%);
+}
+.weather-bg-night {
+  background: linear-gradient(135deg, #1A1D20 0%, #2D3238 40%, #3A4050 100%);
+}
+
+/* ===== 天气粒子基础样式 ===== */
+.weather-particle-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* 阳光粒子 */
+.sun-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.7);
+  box-shadow: 0 0 6px 2px rgba(255,200,100,0.4);
+}
+
+/* 雨滴 */
+.rain-drop {
+  position: absolute;
+  width: 2px;
+  height: 14px;
+  border-radius: 0 0 4px 4px;
+  background: rgba(255,255,255,0.5);
+}
+
+/* 雪花 */
+.snow-flake {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.7);
+  box-shadow: 0 0 3px 1px rgba(255,255,255,0.3);
+}
+
+/* 云朵 */
+.cloud-puff {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+}
+
+/* ===== 温度条渐变 ===== */
+.temp-bar-cold    { background: linear-gradient(90deg, #60A5FA, #93C5FD); }
+.temp-bar-cool    { background: linear-gradient(90deg, #93C5FD, #0D9488); }
+.temp-bar-comfort { background: linear-gradient(90deg, #0D9488, #FCD34D); }
+.temp-bar-warm    { background: linear-gradient(90deg, #FCD34D, #F97316); }
+.temp-bar-hot     { background: linear-gradient(90deg, #F97316, #EF4444); }
+
+/* ===== Login 背景轮播渐变 ===== */
+.auth-bg-gradient {
+  background: linear-gradient(160deg, #FBF7F2 0%, #F0EAE0 30%, #E8E4DC 60%, #D5CFC6 100%);
+  background-size: 400% 400%;
+}
+
+/* ===== 行程卡片 hover 抬升 ===== */
+.trip-card-hover {
+  transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.trip-card-hover:hover {
+  box-shadow: 0 4px 16px rgba(26,29,32,0.08);
+  transform: translateY(-2px);
+}
+.trip-card-hover:active {
+  transform: scale(0.985);
+}
+
 /* ===== 动效偏好适配 ===== */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

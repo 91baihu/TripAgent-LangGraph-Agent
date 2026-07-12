@@ -114,7 +114,7 @@ export function MapPanel() {
       {weatherData && (
         <WeatherCard
           weather={weatherData}
-          compact
+          variant="compact"
           className="absolute top-3 right-3 z-10"
         />
       )}

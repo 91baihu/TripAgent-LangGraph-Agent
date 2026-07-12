@@ -37,15 +37,15 @@ export function Timeline({ spots, dayLabel, className = "" }: TimelineProps) {
       {dayLabel && (
         <h3 className="text-h3 text-text-primary mb-4">📅 {dayLabel}</h3>
       )}
-      <div className="relative pl-8 border-l-2 border-primary/30 space-y-0">
+      <div className="relative pl-8 border-l-[1.5px] border-warm-border space-y-0">
         {spots.map((spot, i) => (
           <div key={i} className="relative pb-5 last:pb-0">
             {/* 时间线节点圆点 — 首节点实心，其余空心 */}
             <div
               className={`
                 absolute -left-[calc(2rem+5px)] top-1
-                w-[14px] h-[14px] rounded-full
-                border-2 shadow-sm
+                w-[10px] h-[10px] rounded-full
+                border-2
                 ${i === 0
                   ? "bg-ink border-ink"
                   : "bg-white border-ink"

@@ -18,7 +18,7 @@ export default {
           inverse: "#FFFFFF",
         },
         surface: {
-          page: "#F5F6F8",
+          page: "#E8E4DC",   // Demo V3 暖灰背景
           card: "#FFFFFF",
           input: "#F0F1F3",
         },
@@ -59,6 +59,7 @@ export default {
       // ===== 字体（新增衬线标题） =====
       fontFamily: {
         sans: [
+          '"Inter"',
           '"PingFang SC"',
           '"Microsoft YaHei"',
           '"Hiragino Sans GB"',
@@ -76,6 +77,7 @@ export default {
         h1: ["24px", { lineHeight: "32px", fontWeight: "700" }],
         h2: ["20px", { lineHeight: "28px", fontWeight: "600" }],
         h3: ["17px", { lineHeight: "24px", fontWeight: "500" }],
+        h4: ["15px", { lineHeight: "22px", fontWeight: "600" }],
         body: ["15px", { lineHeight: "22px", fontWeight: "400" }],
         caption: ["13px", { lineHeight: "18px", fontWeight: "400" }],
         small: ["11px", { lineHeight: "16px", fontWeight: "400" }],
@@ -138,6 +140,14 @@ export default {
           "0%, 80%, 100%": { transform: "scale(0.3)", opacity: "0.3" },
           "40%": { transform: "scale(1)", opacity: "1" },
         },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        "fade-out": {
+          from: { opacity: "1" },
+          to: { opacity: "0" },
+        },
         "fade-up": {
           from: { opacity: "0", transform: "translateY(16px)" },
           to: { opacity: "1", transform: "translateY(0)" },
@@ -150,15 +160,53 @@ export default {
           from: { opacity: "0", transform: "translateX(-12px)" },
           to: { opacity: "1", transform: "translateX(0)" },
         },
+        // 🆕 天气粒子动效
+        "sun-ray": {
+          "0%": { opacity: "0", transform: "translate(0,0) scale(0)" },
+          "50%": { opacity: "0.6", transform: "translate(var(--tw-drift-x,20px),var(--tw-drift-y,-15px)) scale(0.8)" },
+          "100%": { opacity: "0", transform: "translate(calc(var(--tw-drift-x,20px)*2),calc(var(--tw-drift-y,-15px)*2)) scale(0)" },
+        },
+        "rain-drop": {
+          "0%": { transform: "translateY(-40px)", opacity: "0" },
+          "20%": { opacity: "0.5" },
+          "100%": { transform: "translateY(140px)", opacity: "0" },
+        },
+        "snow-fall": {
+          "0%": { transform: "translateY(-20px) rotate(0deg)", opacity: "0" },
+          "10%": { opacity: "0.8" },
+          "100%": { transform: "translateY(140px) rotate(360deg)", opacity: "0" },
+        },
+        "cloud-drift": {
+          "0%": { transform: "translateX(-30px)", opacity: "0.3" },
+          "50%": { opacity: "0.6" },
+          "100%": { transform: "translateX(30px)", opacity: "0.3" },
+        },
+        "temp-pulse": {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.03)" },
+        },
+        "gradient-shift": {
+          "0%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+          "100%": { backgroundPosition: "0% 50%" },
+        },
       },
       animation: {
         shimmer: "shimmer 1.6s ease-in-out infinite",
         breathe: "breathe 3s ease-in-out infinite",
         "pulse-ring": "pulse-ring 2s infinite",
         "dot-bounce": "dot-bounce 1.3s ease-in-out infinite",
+        "fade-in": "fade-in 0.3s cubic-bezier(0.4,0,0.2,1) both",
+        "fade-out": "fade-out 0.2s ease-in forwards",
         "fade-up": "fade-up 0.4s cubic-bezier(0.4,0,0.2,1) both",
         "scale-in": "scale-in 0.3s cubic-bezier(0.34,1.56,0.64,1) both",
         "slide-right": "slide-right 0.3s cubic-bezier(0.4,0,0.2,1) both",
+        "sun-ray": "sun-ray 3s ease-in-out infinite",
+        "rain-drop": "rain-drop 0.8s linear infinite",
+        "snow-fall": "snow-fall 4s linear infinite",
+        "cloud-drift": "cloud-drift 6s ease-in-out infinite",
+        "temp-pulse": "temp-pulse 6s ease-in-out infinite",
+        "gradient-shift": "gradient-shift 8s ease infinite",
       },
     },
   },

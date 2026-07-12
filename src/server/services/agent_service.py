@@ -125,7 +125,7 @@ class TravelAgentService:
                     "travel_plan": travel_plan or {},
                 },
                 stream_mode="values",
-                config={"recursion_limit": 12},
+                config={"recursion_limit": 30},
             ):
                 if not event.get("messages"):
                     continue
@@ -206,7 +206,7 @@ class TravelAgentService:
                     "next_step": "",
                     "travel_plan": travel_plan or {},
                 },
-                config={"recursion_limit": 12},
+                config={"recursion_limit": 30},
             )
 
             reply = result["messages"][-1].content if result.get("messages") else ""
