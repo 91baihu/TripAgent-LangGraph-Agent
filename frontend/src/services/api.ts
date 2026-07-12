@@ -1,4 +1,4 @@
-/** API 请求封装 — fetch + JWT 自动注入 + Token 自动刷新 */
+/** API 请求封装 — fetch + JWT 自动注入 + Token 自动刷新 + 设备指纹注入 */
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
@@ -38,6 +38,15 @@ function setTokens(access: string, refresh: string): void {
 function clearTokens(): void {
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
+}
+
+// ===== 设备指纹 =====
+function getDeviceFingerprint(): string | null {
+  return localStorage.getItem("device_fp");
+}
+
+export function setDeviceFingerprint(fp: string): void {
+  localStorage.setItem("device_fp", fp);
 }
 
 async function refreshAccessToken(): Promise<string> {
@@ -97,6 +106,12 @@ async function request<T = unknown>(
     "Content-Type": "application/json",
     ...(fetchOptions.headers as Record<string, string>),
   };
+
+  // 自动注入设备指纹
+  const deviceFp = getDeviceFingerprint();
+  if (deviceFp) {
+    headers["X-Device-Fingerprint"] = deviceFp;
+  }
 
   // 自动注入 JWT
   if (!skipAuth) {

@@ -7,6 +7,7 @@ import { Button } from "../../components/Button/Button";
 import { Tag } from "../../components/Tag/Tag";
 import { Skeleton } from "../../components/Skeleton/Skeleton";
 import { Timeline, type TimelineSpot } from "../../components/Timeline/Timeline";
+import { ExportMenu } from "../../components/ExportMenu/ExportMenu";
 import { api } from "../../services/api";
 import { endpoints } from "../../services/endpoints";
 import { showToast } from "../../components/Toast/ToastContainer";
@@ -57,6 +58,20 @@ export function TripDetailPage() {
       showToast("分享链接已复制到剪贴板");
     } catch {
       showToast("分享失败，请稍后重试", "error");
+    }
+  };
+
+  // 一键复制纯文本行程
+  const handleCopyText = async () => {
+    if (!trip) return;
+    try {
+      const data = await api.get<{ text: string }>(
+        endpoints.export.text(trip.id)
+      );
+      await navigator.clipboard.writeText(data.text);
+      showToast("✅ 行程已复制到剪贴板");
+    } catch {
+      showToast("复制失败，请稍后重试", "error");
     }
   };
 
@@ -219,16 +234,19 @@ export function TripDetailPage() {
           <Button
             variant="secondary"
             className="flex-1"
+            onClick={handleCopyText}
+          >
+            📋 一键复制
+          </Button>
+          <div className="flex-1">
+            <ExportMenu tripId={trip.id} />
+          </div>
+          <Button
+            variant="secondary"
+            className="flex-1"
             onClick={() => navigate(`/trips/${trip.id}/map`)}
           >
-            🗺️ 地图查看
-          </Button>
-          <Button
-            variant="primary"
-            className="flex-1"
-            onClick={handleShare}
-          >
-            🔗 分享行程
+            🗺️ 地图
           </Button>
         </div>
       </div>

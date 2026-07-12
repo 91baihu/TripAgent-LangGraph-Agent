@@ -5,6 +5,7 @@ import { TripDetailPage } from "./features/trips/TripDetailPage";
 import { MapView } from "./features/map/MapView";
 import { LoginPage } from "./features/auth/LoginPage";
 import { MePage } from "./features/auth/MePage";
+import { PricingPage } from "./features/billing/PricingPage";
 import { BottomNav } from "./components/BottomNav/BottomNav";
 import { ToastContainer } from "./components/Toast/ToastContainer";
 import { ErrorBoundary } from "./components/ErrorBoundary/ErrorBoundary";
@@ -44,6 +45,7 @@ export default function App() {
                 }
               />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/pricing" element={<PricingPage />} />
               <Route
                 path="/me"
                 element={

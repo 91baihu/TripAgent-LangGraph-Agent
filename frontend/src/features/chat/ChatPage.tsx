@@ -4,11 +4,13 @@ import { useState, useRef, useEffect } from "react";
 import { Bubble, ThinkingBubble } from "../../components/Bubble/Bubble";
 import { useChatStore } from "../../stores/chatStore";
 import { useChatStream } from "../../hooks/useChatStream";
+import { useDeviceFingerprint } from "../../hooks/useDeviceFingerprint";
 import { ToolStepChip, StepsSummary } from "./ToolStepCard";
 import { VisualizationPanel } from "./VisualizationPanel";
 import { ViewSwitcher, type MobileView } from "../../components/ViewSwitcher/ViewSwitcher";
 import { SearchProgress } from "./SearchProgress";
 import { UserMenu } from "../../components/UserMenu/UserMenu";
+import { QuotaBar } from "../../components/QuotaBar/QuotaBar";
 
 const QUICK_SUGGESTIONS = [
   { emoji: "🏖️", label: "北京3日亲子游" },
@@ -27,6 +29,9 @@ export function ChatPage() {
   const { sendMessage, cancelStream } = useChatStream();
   const [input, setInput] = useState("");
   const [mobileView, setMobileView] = useState<MobileView>("chat");
+
+  // 设备指纹初始化（仅首次加载时异步生成）
+  useDeviceFingerprint();
 
   // 自动滚到底部 — 流式时即时滚动防抖动，普通消息平滑滚动
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -228,6 +233,9 @@ export function ChatPage() {
         <h1 className="font-serif text-lg font-black text-text-primary">TripAgent</h1>
         <UserMenu />
       </header>
+
+      {/* 额度进度条 */}
+      <QuotaBar />
 
       {/* ===== 桌面端：左右分屏 ===== */}
       <div className="hidden md:flex flex-1 min-h-0">

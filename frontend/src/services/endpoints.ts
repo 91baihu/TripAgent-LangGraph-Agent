@@ -35,4 +35,30 @@ export const endpoints = {
     refresh: "/auth/refresh",
     me: "/auth/me",
   },
+
+  // 额度
+  credits: {
+    status: "/credits/status",
+  },
+
+  // 套餐
+  plans: {
+    list: "/plans",
+  },
+
+  // 会话
+  sessions: {
+    list: "/sessions",
+    get: (id: string) => `/sessions/${id}`,
+    messages: (id: string) => `/sessions/${id}/messages`,
+    update: (id: string) => `/sessions/${id}`,
+    delete: (id: string) => `/sessions/${id}`,
+  },
+
+  // 导出
+  export: {
+    download: (tripId: string, format: string) => `/trips/${tripId}/export?format=${format}`,
+    text: (tripId: string) => `/trips/${tripId}/export/text`,
+    preview: (tripId: string, format: string = "html") => `/trips/${tripId}/export/preview?format=${format}`,
+  },
 } as const;
