@@ -17,7 +17,7 @@ PLANS = {
     "free": {
         "name": "免费版",
         "price_cents": 0,
-        "monthly_quota": 1,
+        "monthly_quota": 5,
         "features": ["基础行程规划", "景点搜索", "天气查询"],
     },
     "pro_monthly": {
@@ -41,7 +41,7 @@ PLANS = {
 }
 
 GUEST_FREE_QUOTA = 1
-NEW_USER_TRIAL_QUOTA = 10
+NEW_USER_TRIAL_QUOTA = 5
 
 
 class QuotaResult:
@@ -57,6 +57,8 @@ class QuotaResult:
         plan_name: str = "免费版",
         status: str = "normal",
         message: str = "",
+        is_admin: bool = False,
+        unlimited: bool = False,
     ):
         self.has_quota = has_quota
         self.remaining = remaining
@@ -66,9 +68,14 @@ class QuotaResult:
         self.plan_name = plan_name
         self.status = status  # normal | warning | exhausted
         self.message = message
+        self.is_admin = is_admin
+        self.unlimited = unlimited
 
     def to_dict(self) -> dict:
-        percent = round((1 - self.remaining / max(self.total, 1)) * 100, 1)
+        if self.unlimited:
+            percent = 0.0  # 管理员永远显示 0% 消耗
+        else:
+            percent = round((1 - self.remaining / max(self.total, 1)) * 100, 1)
         return {
             "is_guest": self.is_guest,
             "quota_type": self.quota_type,
@@ -78,6 +85,8 @@ class QuotaResult:
             "status": self.status,
             "plan_name": self.plan_name,
             "message": self.message,
+            "is_admin": self.is_admin,
+            "unlimited": self.unlimited,
         }
 
 
@@ -167,6 +176,8 @@ class CreditService:
                     quota_type="account",
                     plan_name="管理员（全部权限）",
                     status="normal",
+                    is_admin=True,
+                    unlimited=True,
                 )
 
             # 检查是否需要重置月度配额

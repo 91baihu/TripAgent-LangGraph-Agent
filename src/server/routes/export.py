@@ -1,4 +1,10 @@
-"""导出路由 — 行程多格式下载 & 一键复制"""
+"""导出路由 — 行程多格式下载 & 一键复制
+
+权限规则：
+- 免费用户（free）：仅可复制纯文本，不可下载文件格式
+- Pro 用户（pro/family）：全部导出功能
+- 管理员（admin）：全部导出功能
+"""
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -11,6 +17,23 @@ from ..models import Trip
 from ..services.export_service import ExportService
 
 router = APIRouter()
+
+# 允许文件导出的角色
+EXPORT_ALLOWED_ROLES = {"pro", "family", "admin"}
+
+
+def _check_export_permission(user: dict, format: str = "file"):
+    """检查导出权限
+
+    - 纯文本复制：所有登录用户可用
+    - 文件下载：仅 pro/family/admin
+    """
+    role = user.get("role", "free")
+    if format != "text" and role not in EXPORT_ALLOWED_ROLES:
+        raise HTTPException(
+            status_code=402,
+            detail="文件导出为 Pro 会员功能，请升级套餐后使用",
+        )
 
 
 async def _get_trip_or_404(db: AsyncSession, trip_id: str, user_id: str) -> Trip:
@@ -42,9 +65,12 @@ async def export_trip(
     - txt: 纯文本文件
     - html: 网页文件
 
+    权限：文件下载仅 Pro/Admin 用户可用
+
     Example:
         GET /api/v1/trips/{trip_id}/export?format=pdf
     """
+    _check_export_permission(current_user, format)
     trip = await _get_trip_or_404(db, trip_id, current_user["sub"])
     exporter = ExportService(trip)
 

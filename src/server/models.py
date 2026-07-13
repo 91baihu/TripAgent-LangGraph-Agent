@@ -51,6 +51,7 @@ class User(Base):
 
     id = Column(UniversalUUID(), primary_key=True, default=uuid4_str)
     email = Column(String(255), unique=True, nullable=False, index=True)
+    phone = Column(String(20), default="", index=True)      # 手机号（支持手机号登录）
     nickname = Column(String(100), default="")
     avatar_url = Column(Text, default="")
     password_hash = Column(String(255), default="")

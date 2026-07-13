@@ -13,6 +13,8 @@ export interface QuotaStatus {
   status: "normal" | "warning" | "exhausted";
   plan_name: string;
   message: string;
+  is_admin?: boolean;
+  unlimited?: boolean;
 }
 
 interface QuotaState {

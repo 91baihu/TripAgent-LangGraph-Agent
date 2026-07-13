@@ -149,6 +149,9 @@ interface BubbleProps {
   role: BubbleRole;
   children: ReactNode;
   className?: string;
+  showCopy?: boolean;
+  onCopy?: () => void;
+  copied?: boolean;
 }
 
 /** 头像圆圈 */
@@ -170,7 +173,7 @@ function Avatar({ role }: { role: BubbleRole }) {
   );
 }
 
-export function Bubble({ role, children, className = "" }: BubbleProps) {
+export function Bubble({ role, children, className = "", showCopy, onCopy, copied }: BubbleProps) {
   const isUser = role === "user";
 
   return (
@@ -182,17 +185,38 @@ export function Bubble({ role, children, className = "" }: BubbleProps) {
       `}
     >
       <Avatar role={role} />
-      <div
-        className={`
-          px-3.5 py-2.5 text-body leading-relaxed
-          ${isUser
-            ? "bg-text-primary text-white rounded-bubble rounded-br-sm"
-            : "bg-surface-card text-text-primary rounded-bubble rounded-bl-sm border border-warm-border"
-          }
-          ${className}
-        `}
-      >
-        {role === "assistant" ? renderMarkdown(children as string) : children}
+      <div className="relative group">
+        <div
+          className={`
+            px-3.5 py-2.5 text-body leading-relaxed
+            ${isUser
+              ? "bg-text-primary text-white rounded-bubble rounded-br-sm"
+              : "bg-surface-card text-text-primary rounded-bubble rounded-bl-sm border border-warm-border"
+            }
+            ${className}
+          `}
+        >
+          {role === "assistant" ? renderMarkdown(children as string) : children}
+        </div>
+        {/* 一键复制按钮 — AI 消息时显示 */}
+        {showCopy && onCopy && (
+          <button
+            onClick={onCopy}
+            className={`
+              absolute -bottom-1 right-0 translate-y-full
+              px-2 py-0.5 text-[0.65rem] font-medium
+              rounded-tag border transition-all duration-200
+              ${copied
+                ? "bg-accent-green text-white border-accent-green"
+                : "bg-white text-ink-tertiary border-warm-border hover:border-ink-tertiary hover:text-ink-secondary"
+              }
+              opacity-0 group-hover:opacity-100
+              cursor-pointer whitespace-nowrap
+            `}
+          >
+            {copied ? "✅ 已复制" : "📋 复制"}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -65,7 +65,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto ${exitingIds.has(toast.id) ? "animate-fade-out" : "animate-fade-up"}`}
+            className={`pointer-events-auto ${exitingIds.has(toast.id) ? "toast-exit" : "toast-enter"}`}
           >
             <ToastItem message={toast.message} type={toast.type} />
           </div>

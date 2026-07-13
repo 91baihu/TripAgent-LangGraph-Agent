@@ -9,6 +9,7 @@ interface User {
   email: string;
   nickname: string;
   role: string;
+  phone?: string;
 }
 
 interface AuthState {
@@ -17,7 +18,14 @@ interface AuthState {
   isLoading: boolean;
 
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, nickname?: string) => Promise<void>;
+  loginWithPhone: (phone: string, password: string) => Promise<void>;
+  register: (
+    email: string,
+    password: string,
+    nickname?: string,
+    code?: string,
+    phone?: string
+  ) => Promise<void>;
   logout: () => void;
   fetchMe: () => Promise<void>;
 }
@@ -33,7 +41,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       const data = await api.post<{
         access_token: string;
         refresh_token: string;
-      }>(endpoints.auth.login, { email, password }, { skipAuth: true });
+      }>(endpoints.auth.login, {
+        email,
+        password,
+        login_type: "email",
+      }, { skipAuth: true });
 
       localStorage.setItem("access_token", data.access_token);
       localStorage.setItem("refresh_token", data.refresh_token);
@@ -47,13 +59,42 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  register: async (email, password, nickname) => {
+  loginWithPhone: async (phone, password) => {
     set({ isLoading: true });
     try {
       const data = await api.post<{
         access_token: string;
         refresh_token: string;
-      }>(endpoints.auth.register, { email, password, nickname }, { skipAuth: true });
+      }>(endpoints.auth.login, {
+        phone,
+        password,
+        login_type: "phone",
+      }, { skipAuth: true });
+
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("refresh_token", data.refresh_token);
+      set({ isAuthenticated: true });
+
+      const user = await api.get<User>(endpoints.auth.me);
+      set({ user });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  register: async (email, password, nickname, code, phone) => {
+    set({ isLoading: true });
+    try {
+      const data = await api.post<{
+        access_token: string;
+        refresh_token: string;
+      }>(endpoints.auth.register, {
+        email,
+        password,
+        nickname,
+        code,
+        phone,
+      }, { skipAuth: true });
 
       localStorage.setItem("access_token", data.access_token);
       localStorage.setItem("refresh_token", data.refresh_token);

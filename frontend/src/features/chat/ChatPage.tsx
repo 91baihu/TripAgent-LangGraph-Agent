@@ -1,7 +1,8 @@
 /** 首页 — 响应式分屏布局：桌面左聊天右可视化，移动端 Tab 切换 */
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Bubble, ThinkingBubble } from "../../components/Bubble/Bubble";
+import { ChatSkeleton } from "../../components/Skeleton/Skeleton";
 import { useChatStore } from "../../stores/chatStore";
 import { useChatStream } from "../../hooks/useChatStream";
 import { useDeviceFingerprint } from "../../hooks/useDeviceFingerprint";
@@ -11,6 +12,7 @@ import { ViewSwitcher, type MobileView } from "../../components/ViewSwitcher/Vie
 import { SearchProgress } from "./SearchProgress";
 import { UserMenu } from "../../components/UserMenu/UserMenu";
 import { QuotaBar } from "../../components/QuotaBar/QuotaBar";
+import { showToast } from "../../components/Toast/ToastContainer";
 
 const QUICK_SUGGESTIONS = [
   { emoji: "🏖️", label: "北京3日亲子游" },
@@ -29,9 +31,36 @@ export function ChatPage() {
   const { sendMessage, cancelStream } = useChatStream();
   const [input, setInput] = useState("");
   const [mobileView, setMobileView] = useState<MobileView>("chat");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // 设备指纹初始化（仅首次加载时异步生成）
   useDeviceFingerprint();
+
+  // 一键复制单条消息
+  const handleCopyMessage = useCallback(async (content: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedId(id);
+      showToast("✅ 已复制到剪贴板");
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      showToast("复制失败", "error");
+    }
+  }, []);
+
+  // 一键复制全部对话
+  const handleCopyAll = useCallback(async () => {
+    const allContent = messages
+      .map((m) => `${m.role === "user" ? "🧑 我" : "🤖 AI"}\n${m.content}`)
+      .join("\n\n---\n\n");
+    const finalContent = allContent + (streamingReply ? `\n\n---\n\n🤖 AI\n${streamingReply}` : "");
+    try {
+      await navigator.clipboard.writeText(finalContent);
+      showToast("✅ 全部对话已复制");
+    } catch {
+      showToast("复制失败", "error");
+    }
+  }, [messages, streamingReply]);
 
   // 自动滚到底部 — 流式时即时滚动防抖动，普通消息平滑滚动
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -120,19 +149,42 @@ export function ChatPage() {
       ) : (
         /* 消息列表 */
         <div className="space-y-1">
-          {messages.map((msg) => (
-            <Bubble key={msg.id} role={msg.role}>
-              {msg.content}
-            </Bubble>
-          ))}
+          {messages.map((msg, idx) => {
+            const isLastAiMsg =
+              msg.role === "assistant" &&
+              (idx === messages.length - 1 || !messages.slice(idx + 1).some(m => m.role === "assistant"));
+            return (
+              <Bubble
+                key={msg.id}
+                role={msg.role}
+                showCopy={msg.role === "assistant"}
+                copied={copiedId === msg.id}
+                onCopy={
+                  msg.role === "assistant"
+                    ? () => handleCopyMessage(msg.content, msg.id)
+                    : undefined
+                }
+              >
+                {msg.content}
+              </Bubble>
+            );
+          })}
 
           {/* 流式回复（增量显示） */}
           {streamingReply && (
             <Bubble role="assistant">{streamingReply}</Bubble>
           )}
 
-          {/* 思考中（LLM 还没开始输出文本） */}
-          {isStreaming && !streamingReply && toolSteps.length === 0 && (
+          {/* 等待首响应骨架屏（刚发送消息还未收到任何回应时） */}
+          {isStreaming && !streamingReply && toolSteps.length === 0 && messages.length > 0 && (
+            <>
+              <ThinkingBubble />
+              <ChatSkeleton />
+            </>
+          )}
+
+          {/* 思考中（纯初始状态：无历史消息 + 流式中 + 无工具调用） */}
+          {isStreaming && !streamingReply && toolSteps.length === 0 && messages.length === 0 && (
             <ThinkingBubble />
           )}
 
@@ -150,6 +202,24 @@ export function ChatPage() {
                   <ToolStepChip key={step.step} step={step} />
                 ))
               )}
+            </div>
+          )}
+
+          {/* 全局复制全部对话按钮（有消息且不流式中时显示） */}
+          {messages.length > 0 && !isStreaming && (
+            <div className="flex justify-center mt-3 mb-2">
+              <button
+                onClick={handleCopyAll}
+                className="
+                  inline-flex items-center gap-1.5 px-3 py-1.5
+                  text-xs text-ink-tertiary hover:text-ink-secondary
+                  bg-transparent hover:bg-sand-dark
+                  rounded-button border border-warm-border hover:border-ink-tertiary
+                  transition-all duration-200 cursor-pointer
+                "
+              >
+                📋 复制全部对话
+              </button>
             </div>
           )}
         </div>

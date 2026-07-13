@@ -155,6 +155,42 @@ class CacheService:
             "expires_at": time.time() + ttl,
         }
 
+    # ===== 通用键值缓存（验证码等） =====
+    async def get(self, key: str) -> Optional[str]:
+        """获取通用缓存值"""
+        r = await self._get_redis()
+        if r:
+            result = await r.get(key)
+            return result.decode() if isinstance(result, bytes) else result
+
+        import time
+        entry = self._fallback.get(key)
+        if entry and time.time() < entry.get("expires_at", 0):
+            return entry["value"]
+        return None
+
+    async def set(self, key: str, value: str, ttl: int = 300):
+        """设置通用缓存值（默认 5 分钟）"""
+        r = await self._get_redis()
+        if r:
+            await r.setex(key, ttl, value)
+            return
+
+        import time
+        self._fallback[key] = {
+            "value": value,
+            "expires_at": time.time() + ttl,
+        }
+
+    async def delete(self, key: str):
+        """删除通用缓存键"""
+        r = await self._get_redis()
+        if r:
+            await r.delete(key)
+            return
+
+        self._fallback.pop(key, None)
+
     # ===== 健康检查 =====
     async def ping(self) -> bool:
         r = await self._get_redis()

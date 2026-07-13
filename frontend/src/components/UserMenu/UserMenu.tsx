@@ -66,7 +66,7 @@ export function UserMenu() {
         <div
           className="
             absolute right-0 top-full mt-2 w-52
-            bg-white border border-warm-border rounded-xl
+            bg-white border border-warm-border2 rounded-card-lg
             shadow-warm-lg overflow-hidden z-50
             animate-scale-in origin-top-right
           "
@@ -102,6 +102,19 @@ export function UserMenu() {
               "
             >
               <span>📋</span> 我的行程
+            </button>
+            <button
+              onClick={() => {
+                setOpen(false);
+                navigate("/sessions");
+              }}
+              className="
+                w-full flex items-center gap-3 px-4 py-2.5
+                text-sm text-ink-secondary hover:bg-sand hover:text-ink
+                transition-colors bg-transparent border-none cursor-pointer text-left
+              "
+            >
+              <span>💬</span> 历史会话
             </button>
             <button
               onClick={() => {

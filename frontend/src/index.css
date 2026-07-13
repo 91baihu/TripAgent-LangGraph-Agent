@@ -244,6 +244,111 @@
   transform: scale(0.985);
 }
 
+/* ===== 页面路由切换动画 ===== */
+.page-enter {
+  animation: pageIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== SSE 流式加载闪烁光标 ===== */
+.streaming-cursor::after {
+  content: "|";
+  animation: cursorBlink 0.8s step-end infinite;
+  color: #0D9488;
+  font-weight: 700;
+}
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ===== Toast 进入/退出动画 ===== */
+.toast-enter {
+  animation: toastIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.toast-exit {
+  animation: toastOut 0.25s ease-in forwards;
+}
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes toastOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+}
+
+/* ===== 弹窗进入动画 ===== */
+.modal-enter {
+  animation: modalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ===== 按钮水波纹效果 ===== */
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+.btn-ripple::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.btn-ripple:active::after {
+  opacity: 1;
+  transition: opacity 0s;
+}
+
+/* ===== 路由切换 loading bar（顶部进度条） ===== */
+.nprogress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #0D9488, #E85D3F);
+  z-index: 9999;
+  animation: nprogressGrow 5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes nprogressGrow {
+  0% { width: 0%; }
+  50% { width: 70%; }
+  80% { width: 90%; }
+  100% { width: 99%; }
+}
+
 /* ===== 动效偏好适配 ===== */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

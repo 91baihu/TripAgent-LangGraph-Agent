@@ -34,6 +34,7 @@ export const endpoints = {
     login: "/auth/login",
     refresh: "/auth/refresh",
     me: "/auth/me",
+    sendCode: "/auth/send-code",
   },
 
   // 额度
