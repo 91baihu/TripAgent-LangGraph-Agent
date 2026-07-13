@@ -21,10 +21,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           className={`
             flex items-center gap-2 h-[44px] px-4
             bg-sand rounded-input border-[1.5px]
-            transition-colors duration-200
+            transition-all duration-200
             ${error
-              ? "border-semantic-error"
-              : "border-warm-border focus-within:border-ink focus-within:bg-white"
+              ? "border-semantic-error focus-within:ring-2 focus-within:ring-semantic-error/15"
+              : "border-warm-border hover:border-ink-tertiary/60 focus-within:border-teal focus-within:bg-white focus-within:ring-2 focus-within:ring-teal/15"
             }
           `}
         >
